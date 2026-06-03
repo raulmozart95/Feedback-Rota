@@ -3,310 +3,419 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Feedback de Rota</title>
+  <title>Feedback de Rota — Rota Distribuidora</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
+    :root {
+      --azul:      #1A3A8F;
+      --azul-dark: #112970;
+      --azul-mid:  #1e4db7;
+      --amarelo:   #F5A623;
+      --amarelo2:  #FFBA00;
+      --branco:    #ffffff;
+      --cinza-bg:  #f0f4ff;
+      --cinza-txt: #4a5568;
+      --borda:     #d0daf5;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
-      font-family: Georgia, 'Times New Roman', serif;
+      background: var(--cinza-bg);
+      font-family: 'Open Sans', sans-serif;
       display: flex; flex-direction: column; align-items: center;
-      padding: 24px 16px;
+      padding: 0 0 40px 0;
     }
-    .wrap { width: 100%; max-width: 560px; }
-    .header {
-      background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
-      border-radius: 16px; padding: 18px 20px;
+
+    /* ── Top bar ── */
+    .topbar {
+      width: 100%;
+      background: var(--azul-dark);
+      padding: 10px 20px;
       display: flex; align-items: center; justify-content: space-between;
-      box-shadow: 0 8px 32px rgba(14,165,233,0.3); margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(17,41,112,0.3);
+      margin-bottom: 0;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-title { color: #fff; font-weight: 700; font-size: 17px; }
-    .header-sub { color: #bae6fd; font-size: 12px; }
-    .header-icons { display: flex; gap: 8px; }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-img { height: 44px; }
+    .logo-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.2); }
+    .logo-sub { color: rgba(255,255,255,0.7); font-size: 11px; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+    .topbar-icons { display: flex; gap: 8px; }
     .icon-btn {
-      background: rgba(255,255,255,0.15); border: none; border-radius: 8px;
-      color: #fff; font-size: 16px; width: 34px; height: 34px; cursor: pointer;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; color: #fff; font-size: 15px;
+      width: 36px; height: 36px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
     }
+    .icon-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Banner título ── */
+    .banner {
+      width: 100%; background: linear-gradient(90deg, var(--azul) 0%, var(--azul-mid) 100%);
+      padding: 18px 20px; text-align: center;
+      border-bottom: 4px solid var(--amarelo);
+      margin-bottom: 20px;
+    }
+    .banner h1 {
+      color: #fff; font-family: 'Montserrat', sans-serif;
+      font-size: 18px; font-weight: 800; letter-spacing: 0.5px;
+    }
+    .banner p { color: rgba(255,255,255,0.75); font-size: 12px; margin-top: 3px; }
+
+    /* ── Wrapper ── */
+    .wrap { width: 100%; max-width: 560px; padding: 0 16px; }
+
+    /* ── Etapas ── */
+    .etapas { display: flex; gap: 6px; margin-bottom: 18px; }
+    .etapa {
+      flex: 1; border-radius: 8px; padding: 9px 4px;
+      text-align: center; font-size: 11px; font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      transition: all 0.3s; color: #94a3b8;
+      background: #fff; border: 1.5px solid var(--borda);
+      letter-spacing: 0.3px;
+    }
+    .etapa.ativa { background: var(--azul); color: #fff; border-color: var(--azul); }
+    .etapa.concluida { background: #22c55e; color: #fff; border-color: #22c55e; }
+
+    /* ── Card ── */
     .card {
-      background: rgba(255,255,255,0.06); backdrop-filter: blur(12px);
-      border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);
-      padding: 20px; margin-bottom: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      background: #fff; border-radius: 14px;
+      border: 1.5px solid var(--borda);
+      padding: 22px; margin-bottom: 16px;
+      box-shadow: 0 2px 16px rgba(26,58,143,0.07);
     }
     .card-title {
-      color: #e2e8f0; font-size: 15px; font-weight: 700;
-      margin-bottom: 16px; padding-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: var(--azul); font-size: 15px; font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      margin-bottom: 18px; padding-bottom: 12px;
+      border-bottom: 2px solid var(--cinza-bg);
+      display: flex; align-items: center; gap: 8px;
     }
+    .card-title::before {
+      content: ''; display: inline-block;
+      width: 4px; height: 18px; background: var(--amarelo);
+      border-radius: 2px;
+    }
+
+    /* ── Campos ── */
     .campo { margin-bottom: 14px; }
     .campo label {
-      color: #94a3b8; font-size: 12px; font-weight: 600;
-      display: block; margin-bottom: 6px;
-      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--cinza-txt); font-size: 11px; font-weight: 700;
+      display: block; margin-bottom: 5px;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      font-family: 'Montserrat', sans-serif;
     }
     input, select, textarea {
-      width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.07);
-      color: #e2e8f0; font-size: 14px; outline: none;
-      font-family: inherit;
+      width: 100%; padding: 10px 13px; border-radius: 8px;
+      border: 1.5px solid var(--borda);
+      background: #f8faff; color: #1a202c;
+      font-size: 14px; outline: none; font-family: 'Open Sans', sans-serif;
+      transition: border 0.2s;
     }
+    input:focus, select:focus, textarea:focus { border-color: var(--azul-mid); background: #fff; }
     textarea { min-height: 80px; resize: vertical; }
     select { cursor: pointer; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid3 { display: grid; grid-template-columns: 1fr 2fr 1.3fr; gap: 8px; }
-    .etapas { display: flex; gap: 8px; margin-bottom: 20px; }
-    .etapa {
-      flex: 1; border-radius: 8px; padding: 8px 4px;
-      text-align: center; font-size: 12px; font-weight: 600;
-      transition: all 0.3s; color: rgba(255,255,255,0.35);
-      background: rgba(255,255,255,0.08);
-    }
-    .etapa.ativa { background: #1d4ed8; color: #fff; }
-    .etapa.concluida { background: #22c55e; color: #fff; }
-    .btns { display: flex; gap: 10px; margin-top: 8px; }
+
+    /* ── Botões ── */
+    .btns { display: flex; gap: 10px; margin-top: 14px; }
     .btn {
-      flex: 1; padding: 12px; border-radius: 10px; border: none;
-      background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
-      color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: all 0.2s;
+      flex: 1; padding: 13px; border-radius: 9px; border: none;
+      background: linear-gradient(90deg, var(--azul) 0%, var(--azul-mid) 100%);
+      color: #fff; font-size: 14px; font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 3px 10px rgba(26,58,143,0.25);
     }
-    .btn:disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.25); cursor: not-allowed; }
-    .btn.sec { background: transparent; border: 1px solid rgba(255,255,255,0.2); }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(26,58,143,0.35); }
+    .btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
+    .btn.sec {
+      background: #fff; color: var(--azul);
+      border: 1.5px solid var(--borda); box-shadow: none;
+    }
+    .btn.amarelo {
+      background: linear-gradient(90deg, var(--amarelo) 0%, var(--amarelo2) 100%);
+      color: var(--azul-dark); box-shadow: 0 3px 10px rgba(245,166,35,0.35);
+    }
+
+    /* ── Critérios ── */
     .criterio {
-      background: rgba(255,255,255,0.05); border-radius: 12px;
-      padding: 14px 16px; margin-bottom: 12px;
-      border: 1px solid transparent; transition: border 0.2s;
+      background: #f8faff; border-radius: 10px;
+      padding: 14px 15px; margin-bottom: 10px;
+      border: 1.5px solid var(--borda); transition: border 0.2s;
     }
-    .criterio-title { color: #e2e8f0; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
-    .notas { display: flex; gap: 8px; }
+    .criterio-title {
+      color: var(--azul); font-size: 13px; font-weight: 700;
+      font-family: 'Montserrat', sans-serif; margin-bottom: 10px;
+    }
+    .notas { display: flex; gap: 6px; }
     .nota-btn {
-      flex: 1; padding: 8px 4px; border-radius: 8px; border: none;
-      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
-      font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-      line-height: 1.4;
+      flex: 1; padding: 8px 3px; border-radius: 7px; border: 1.5px solid var(--borda);
+      background: #fff; color: var(--cinza-txt);
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; line-height: 1.4;
+      font-family: 'Montserrat', sans-serif;
     }
+    .nota-btn:hover { border-color: var(--azul-mid); }
+
+    /* ── Resumo ── */
     .resumo {
-      background: rgba(14,165,233,0.08); border-radius: 10px;
-      padding: 12px 14px; margin-bottom: 14px;
-      border: 1px solid rgba(14,165,233,0.2);
+      background: #f0f4ff; border-radius: 10px;
+      padding: 13px 15px; margin-bottom: 14px;
+      border-left: 4px solid var(--amarelo);
     }
-    .resumo-title { color: #0ea5e9; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-    .resumo-body { color: #94a3b8; font-size: 12px; line-height: 1.8; }
+    .resumo-title {
+      color: var(--azul); font-size: 12px; font-weight: 700;
+      font-family: 'Montserrat', sans-serif; margin-bottom: 5px;
+    }
+    .resumo-body { color: var(--cinza-txt); font-size: 12px; line-height: 1.9; }
+
+    /* ── Status boxes ── */
     .status-box {
-      border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center;
+      border-radius: 14px; padding: 28px 24px;
+      margin-bottom: 16px; text-align: center;
     }
-    .status-box.ok { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.4); }
-    .status-box.err { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); }
-    .status-box .icon { font-size: 44px; margin-bottom: 8px; }
-    .status-box .msg { font-weight: 700; font-size: 16px; }
-    .status-box.ok .msg { color: #4ade80; }
-    .status-box.err .msg { color: #f87171; }
-    .status-box .sub { font-size: 13px; margin-top: 4px; }
-    .status-box.ok .sub { color: #86efac; }
-    .status-box.err .sub { color: #fca5a5; }
-    .data-preview { color: #0ea5e9; font-size: 12px; margin-top: 6px; }
+    .status-box.ok {
+      background: #f0fdf4; border: 2px solid #86efac;
+    }
+    .status-box.err {
+      background: #fff5f5; border: 2px solid #fca5a5;
+    }
+    .status-box .icon { font-size: 48px; margin-bottom: 10px; }
+    .status-box .msg { font-weight: 800; font-size: 18px; font-family: 'Montserrat', sans-serif; }
+    .status-box.ok .msg { color: #16a34a; }
+    .status-box.err .msg { color: #dc2626; }
+    .status-box .sub { font-size: 13px; margin-top: 6px; color: var(--cinza-txt); }
+
+    /* ── Data preview ── */
+    #data-preview-text {
+      color: var(--azul-mid); font-size: 12px; font-weight: 600;
+      margin-top: 6px; min-height: 18px; font-family: 'Montserrat', sans-serif;
+    }
+
+    /* ── Histórico ── */
     .hist-item {
-      background: rgba(255,255,255,0.05); border-radius: 10px;
-      padding: 12px 14px; margin-bottom: 10px;
+      background: #f8faff; border-radius: 10px;
+      padding: 13px 15px; margin-bottom: 10px;
+      border: 1.5px solid var(--borda);
     }
     .hist-top { display: flex; justify-content: space-between; margin-bottom: 4px; }
-    .hist-nome { color: #e2e8f0; font-weight: 700; font-size: 13px; }
-    .hist-data { color: #94a3b8; font-size: 12px; }
-    .hist-sub { color: #94a3b8; font-size: 12px; }
-    .hist-media { color: #0ea5e9; font-size: 12px; margin-top: 4px; }
+    .hist-nome { color: var(--azul); font-weight: 700; font-size: 13px; font-family: 'Montserrat', sans-serif; }
+    .hist-data { color: var(--cinza-txt); font-size: 12px; }
+    .hist-sub { color: var(--cinza-txt); font-size: 12px; }
+    .hist-media { color: var(--azul-mid); font-size: 12px; margin-top: 4px; font-weight: 700; }
+
     .hidden { display: none !important; }
-    #data-preview-text { color: #0ea5e9; font-size: 12px; margin-top: 6px; min-height: 18px; }
+
+    /* ── Badge amarelo ── */
+    .badge {
+      display: inline-block; background: var(--amarelo);
+      color: var(--azul-dark); font-size: 10px; font-weight: 800;
+      padding: 2px 8px; border-radius: 20px;
+      font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px;
+      margin-left: 8px; vertical-align: middle;
+    }
   </style>
 </head>
 <body>
 
-<div class="wrap" id="app">
+  <!-- TOP BAR COM LOGO -->
+  <div class="topbar">
+    <div class="logo-area">
+      <img class="logo-img" src="https://www.distribuidorarota.com.br/rotadistribuidora/wp-content/uploads/2025/07/Prancheta-1-copia-e1753708457586.png"
+        onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';"
+      />
+      <div id="logo-fallback" style="display:none; align-items:center; gap:8px;">
+        <div style="width:40px;height:40px;background:var(--amarelo);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--azul-dark);font-family:Montserrat,sans-serif;">R</div>
+        <span style="color:#fff;font-family:Montserrat,sans-serif;font-weight:800;font-size:16px;">Rota</span>
+      </div>
+      <div class="logo-divider"></div>
+      <div class="logo-sub">Supervisão Comercial</div>
+    </div>
+    <div class="topbar-icons">
+      <button class="icon-btn" onclick="toggleTela('historico')" title="Histórico">📊</button>
+    </div>
+  </div>
 
-  <!-- HEADER -->
-  <div>
-    <div class="header">
-      <div class="header-left">
-        <span style="font-size:28px">📋</span>
-        <div>
-          <div class="header-title">Feedback de Rota</div>
-          <div class="header-sub">Supervisão Comercial — Registro Diário</div>
+  <!-- BANNER -->
+  <div class="banner">
+    <h1>📋 Feedback de Rota</h1>
+    <p>Registro diário de acompanhamento de vendedores</p>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ETAPAS -->
+    <div class="etapas" id="etapas-bar">
+      <div class="etapa ativa" id="etapa-bar-1">1. Identificação</div>
+      <div class="etapa" id="etapa-bar-2">2. Avaliação</div>
+      <div class="etapa" id="etapa-bar-3">3. Observações</div>
+    </div>
+
+    <!-- ETAPA 1 -->
+    <div class="card" id="tela-etapa1">
+      <div class="card-title">Identificação</div>
+
+      <div class="campo">
+        <label>Supervisor</label>
+        <select id="supervisor">
+          <option value="">Selecione...</option>
+          <option>Jose Adelson Ramos S Junior</option>
+          <option>Alexandre Rodrigues da Silva</option>
+          <option>Jefferson Ferreira da Silva</option>
+          <option>Humberto Jorge de A C Junior</option>
+          <option>Manoel Luis da Silva</option>
+          <option>Michel Azarias Zeca</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>Vendedor acompanhado</label>
+        <input type="text" id="vendedor" placeholder="Nome do vendedor"/>
+      </div>
+
+      <div class="campo">
+        <label>📅 Data da visita</label>
+        <div class="grid3">
+          <select id="diaNum" onchange="atualizarDataPreview()">
+            <option value="">Dia</option>
+          </select>
+          <select id="mes" onchange="atualizarDias(); atualizarDataPreview()">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+          <select id="ano" onchange="atualizarDias(); atualizarDataPreview()">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div id="data-preview-text"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="campo">
+          <label>Dia da semana</label>
+          <select id="diaSemana">
+            <option value="">Selecione...</option>
+            <option>Segunda-feira</option><option>Terça-feira</option>
+            <option>Quarta-feira</option><option>Quinta-feira</option>
+            <option>Sexta-feira</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Turno</label>
+          <select id="turno">
+            <option value="">Selecione...</option>
+            <option>Manhã</option><option>Tarde</option>
+          </select>
         </div>
       </div>
-      <div class="header-icons">
-        <button class="icon-btn" onclick="toggleTela('historico')" title="Histórico">📊</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- ETAPAS -->
-  <div class="etapas" id="etapas-bar">
-    <div class="etapa ativa" id="etapa-bar-1">1. Identificação</div>
-    <div class="etapa" id="etapa-bar-2">2. Avaliação</div>
-    <div class="etapa" id="etapa-bar-3">3. Observações</div>
-  </div>
-
-  <!-- ETAPA 1 -->
-  <div class="card" id="tela-etapa1">
-    <div class="card-title">👤 Identificação</div>
-
-    <div class="campo">
-      <label>Supervisor</label>
-      <select id="supervisor">
-        <option value="">Selecione...</option>
-        <option>Jefferson Ferreira</option>
-        <option>Outro Supervisor</option>
-      </select>
-    </div>
-
-    <div class="campo">
-      <label>Vendedor acompanhado</label>
-      <input type="text" id="vendedor" placeholder="Nome do vendedor"/>
-    </div>
-
-    <div class="campo">
-      <label>📅 Data da visita</label>
-      <div class="grid3">
-        <select id="diaNum" onchange="atualizarDataPreview()">
-          <option value="">Dia</option>
-        </select>
-        <select id="mes" onchange="atualizarDias(); atualizarDataPreview()">
-          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-          <option value="3">Março</option><option value="4">Abril</option>
-          <option value="5">Maio</option><option value="6">Junho</option>
-          <option value="7">Julho</option><option value="8">Agosto</option>
-          <option value="9">Setembro</option><option value="10">Outubro</option>
-          <option value="11">Novembro</option><option value="12">Dezembro</option>
-        </select>
-        <select id="ano" onchange="atualizarDias(); atualizarDataPreview()">
-          <option value="2025">2025</option>
-          <option value="2026" selected>2026</option>
-          <option value="2027">2027</option>
-        </select>
-      </div>
-      <div id="data-preview-text"></div>
-    </div>
-
-    <div class="grid2">
       <div class="campo">
-        <label>Dia da semana</label>
-        <select id="diaSemana">
-          <option value="">Selecione...</option>
-          <option>Segunda-feira</option><option>Terça-feira</option>
-          <option>Quarta-feira</option><option>Quinta-feira</option>
-          <option>Sexta-feira</option>
-        </select>
+        <label>Cidade / Região</label>
+        <input type="text" id="cidade" placeholder="Ex: Coruripe"/>
+      </div>
+
+      <div class="campo">
+        <label>Clientes visitados</label>
+        <input type="text" id="clientes" placeholder="Ex: Mercado X, Padaria Y"/>
+      </div>
+
+      <div class="btns">
+        <button class="btn" onclick="irEtapa(2)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- ETAPA 2 -->
+    <div class="card hidden" id="tela-etapa2">
+      <div class="card-title">Avaliação da Rota</div>
+      <div id="criterios-container"></div>
+      <div class="btns">
+        <button class="btn sec" onclick="irEtapa(1)">← Voltar</button>
+        <button class="btn" onclick="irEtapa(3)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- ETAPA 3 -->
+    <div class="card hidden" id="tela-etapa3">
+      <div class="card-title">Observações Finais</div>
+      <div class="campo">
+        <label>✅ Destaques positivos</label>
+        <textarea id="destaques" placeholder="O que o vendedor fez bem hoje?"></textarea>
       </div>
       <div class="campo">
-        <label>Turno</label>
-        <select id="turno">
-          <option value="">Selecione...</option>
-          <option>Manhã</option><option>Tarde</option>
-        </select>
+        <label>⚠️ Pontos de melhoria</label>
+        <textarea id="pontosMelhoria" placeholder="O que precisa melhorar?"></textarea>
+      </div>
+      <div class="campo">
+        <label>🎯 Ações combinadas</label>
+        <textarea id="acoes" placeholder="O que foi acordado com o vendedor?"></textarea>
+      </div>
+      <div class="resumo">
+        <div class="resumo-title">📋 Resumo do envio</div>
+        <div class="resumo-body" id="resumo-texto"></div>
+      </div>
+      <div class="btns">
+        <button class="btn sec" onclick="irEtapa(2)">← Voltar</button>
+        <button class="btn amarelo" onclick="enviar()">💾 Salvar no Sheets</button>
       </div>
     </div>
 
-    <div class="campo">
-      <label>Cidade / Região</label>
-      <input type="text" id="cidade" placeholder="Ex: Coruripe"/>
+    <!-- ENVIANDO -->
+    <div class="card hidden" id="tela-sending">
+      <div class="card-title">Salvando...</div>
+      <div style="color:var(--cinza-txt);text-align:center;padding:24px">
+        ⏳ Enviando dados para o Google Sheets...
+      </div>
     </div>
 
-    <div class="campo">
-      <label>Clientes visitados</label>
-      <input type="text" id="clientes" placeholder="Ex: Mercado X, Padaria Y"/>
+    <!-- SUCESSO -->
+    <div class="hidden" id="tela-success">
+      <div class="status-box ok">
+        <div class="icon">✅</div>
+        <div class="msg">Salvo com sucesso!</div>
+        <div class="sub" id="success-count"></div>
+      </div>
+      <div class="btns">
+        <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
+        <button class="btn amarelo" onclick="novoFeedback()">➕ Novo Feedback</button>
+      </div>
     </div>
 
-    <div class="btns">
-      <button class="btn" onclick="irEtapa(2)">Próximo →</button>
+    <!-- ERRO -->
+    <div class="hidden" id="tela-error">
+      <div class="status-box err">
+        <div class="icon">⚠️</div>
+        <div class="msg">Erro ao conectar</div>
+        <div class="sub">Feedback salvo localmente. Tente novamente ou baixe o Excel.</div>
+      </div>
+      <div class="btns">
+        <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
+        <button class="btn" onclick="novoFeedback()">➕ Novo Feedback</button>
+      </div>
     </div>
-  </div>
 
-  <!-- ETAPA 2 -->
-  <div class="card hidden" id="tela-etapa2">
-    <div class="card-title">📊 Avaliação da Rota</div>
-    <div id="criterios-container"></div>
-    <div class="btns">
-      <button class="btn sec" onclick="irEtapa(1)">← Voltar</button>
-      <button class="btn" onclick="irEtapa(3)">Próximo →</button>
+    <!-- HISTÓRICO -->
+    <div class="card hidden" id="tela-historico">
+      <div class="card-title" id="hist-titulo">Histórico</div>
+      <div id="hist-lista"></div>
+      <div class="btns">
+        <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
+        <button class="btn" onclick="toggleTela('form')">← Voltar</button>
+      </div>
     </div>
-  </div>
 
-  <!-- ETAPA 3 -->
-  <div class="card hidden" id="tela-etapa3">
-    <div class="card-title">💬 Observações Finais</div>
-    <div class="campo">
-      <label>✅ Destaques positivos</label>
-      <textarea id="destaques" placeholder="O que o vendedor fez bem hoje?"></textarea>
-    </div>
-    <div class="campo">
-      <label>⚠️ Pontos de melhoria</label>
-      <textarea id="pontosMelhoria" placeholder="O que precisa melhorar?"></textarea>
-    </div>
-    <div class="campo">
-      <label>🎯 Ações combinadas</label>
-      <textarea id="acoes" placeholder="O que foi acordado com o vendedor?"></textarea>
-    </div>
-    <div class="resumo">
-      <div class="resumo-title">📋 Resumo</div>
-      <div class="resumo-body" id="resumo-texto"></div>
-    </div>
-    <div class="btns">
-      <button class="btn sec" onclick="irEtapa(2)">← Voltar</button>
-      <button class="btn" onclick="enviar()">💾 Salvar no Sheets</button>
-    </div>
-  </div>
-
-  <!-- ENVIANDO -->
-  <div class="card hidden" id="tela-sending">
-    <div class="card-title">⏳ Salvando...</div>
-    <div style="color:#94a3b8;text-align:center;padding:20px">
-      Enviando dados para o Google Sheets...
-    </div>
-  </div>
-
-  <!-- SUCESSO -->
-  <div class="hidden" id="tela-success">
-    <div class="status-box ok">
-      <div class="icon">✅</div>
-      <div class="msg">Salvo no Google Sheets!</div>
-      <div class="sub" id="success-count"></div>
-    </div>
-    <div class="btns">
-      <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
-      <button class="btn" onclick="novoFeedback()">➕ Novo Feedback</button>
-    </div>
-  </div>
-
-  <!-- ERRO -->
-  <div class="hidden" id="tela-error">
-    <div class="status-box err">
-      <div class="icon">⚠️</div>
-      <div class="msg">Erro ao conectar ao Sheets</div>
-      <div class="sub">Feedback salvo localmente. Tente novamente ou baixe o Excel.</div>
-    </div>
-    <div class="btns">
-      <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
-      <button class="btn" onclick="novoFeedback()">➕ Novo Feedback</button>
-    </div>
-  </div>
-
-  <!-- HISTÓRICO -->
-  <div class="card hidden" id="tela-historico">
-    <div class="card-title" id="hist-titulo">📊 Histórico</div>
-    <div id="hist-lista"></div>
-    <div class="btns">
-      <button class="btn sec" onclick="baixarExcel()">📥 Baixar Excel</button>
-      <button class="btn" onclick="toggleTela('form')">← Voltar</button>
-    </div>
-  </div>
-
-</div>
+  </div><!-- /wrap -->
 
 <script>
-// ── Config ────────────────────────────────────────────────────
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjU9botqJBF620n6FlIYXuNVJakeproYQvUJ5nf2pv0AFEvbWen2h1n9i0saxlVFdAzQ/exec";
 const STORAGE_KEY = "feedbacks_rota_v3";
 
@@ -318,13 +427,12 @@ const criterios = [
   { label:"Organização e Exposição", key:"organizacao", icon:"🏪" },
 ];
 const notaLabel = ["","Ruim","Regular","Bom","Muito Bom","Excelente"];
-const notaColor = ["","#ef4444","#f97316","#eab308","#22c55e","#16a34a"];
+const notaColor = ["","#ef4444","#f97316","#eab308","#16a34a","#0ea5e9"];
+const notaBg    = ["","#fff5f5","#fff7ed","#fefce8","#f0fdf4","#f0f9ff"];
 
 let notas = {};
-let telaAtual = "form";
 let etapaAtual = 1;
 
-// ── Init ──────────────────────────────────────────────────────
 atualizarDias();
 renderCriterios();
 
@@ -341,12 +449,12 @@ function renderCriterios() {
       <div class="notas" id="notas-${c.key}">
         ${[1,2,3,4,5].map(n => `
           <button class="nota-btn" id="nota-${c.key}-${n}" onclick="setNota('${c.key}',${n})">
-            ${n}<br><span style="font-size:9px;font-weight:400">${notaLabel[n]}</span>
+            ${n}<br><span style="font-size:9px;font-weight:600">${notaLabel[n]}</span>
           </button>
         `).join("")}
       </div>
       <input type="text" id="obs-${c.key}" placeholder="Observação (opcional)"
-        style="margin-top:8px;display:none"
+        style="margin-top:10px;display:none"
         oninput="notas['${c.key}'].obs=this.value"/>
     `;
     cont.appendChild(div);
@@ -357,13 +465,20 @@ function setNota(key, n) {
   notas[key].nota = n;
   [1,2,3,4,5].forEach(i => {
     const btn = document.getElementById(`nota-${key}-${i}`);
-    btn.style.background = i===n ? notaColor[n] : "rgba(255,255,255,0.1)";
-    btn.style.color = i===n ? "#fff" : "rgba(255,255,255,0.5)";
+    if (i === n) {
+      btn.style.background = notaColor[n];
+      btn.style.color = "#fff";
+      btn.style.borderColor = notaColor[n];
+    } else {
+      btn.style.background = "#fff";
+      btn.style.color = "#4a5568";
+      btn.style.borderColor = "#d0daf5";
+    }
   });
-  const obs = document.getElementById(`obs-${key}`);
-  obs.style.display = "block";
+  document.getElementById(`obs-${key}`).style.display = "block";
   const criterio = document.getElementById(`criterio-${key}`);
-  criterio.style.border = `1px solid ${notaColor[n]}40`;
+  criterio.style.borderColor = notaColor[n];
+  criterio.style.background = notaBg[n];
 }
 
 function atualizarDias() {
@@ -388,11 +503,7 @@ function atualizarDataPreview() {
   const m = document.getElementById("mes").value;
   const a = document.getElementById("ano").value;
   const el = document.getElementById("data-preview-text");
-  if (d && m && a) {
-    el.textContent = `📅 ${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${a}`;
-  } else {
-    el.textContent = "";
-  }
+  el.textContent = d && m && a ? `📅 ${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${a}` : "";
 }
 
 function getDataFormatada() {
@@ -403,15 +514,13 @@ function getDataFormatada() {
 }
 
 function mediaGeral(n = notas) {
-  const soma = criterios.reduce((a,c) => a + (n[c.key]?.nota||0), 0);
-  return (soma / criterios.length).toFixed(1);
+  return (criterios.reduce((a,c) => a + (n[c.key]?.nota||0), 0) / criterios.length).toFixed(1);
 }
 
-// ── Navegação ─────────────────────────────────────────────────
 function mostrarTela(id) {
-  const telas = ["tela-etapa1","tela-etapa2","tela-etapa3","tela-sending",
-                 "tela-success","tela-error","tela-historico","etapas-bar"];
-  telas.forEach(t => document.getElementById(t)?.classList.add("hidden"));
+  ["tela-etapa1","tela-etapa2","tela-etapa3","tela-sending",
+   "tela-success","tela-error","tela-historico","etapas-bar"]
+    .forEach(t => document.getElementById(t)?.classList.add("hidden"));
   document.getElementById(id)?.classList.remove("hidden");
 }
 
@@ -439,15 +548,14 @@ function irEtapa(n) {
   if (n === 3) {
     const todas = criterios.every(c => notas[c.key].nota > 0);
     if (!todas) { alert("Avalie todos os critérios antes de continuar."); return; }
-    // Atualiza resumo
-    const data = getDataFormatada();
-    const sup = document.getElementById("supervisor").value;
-    const vend = document.getElementById("vendedor").value;
-    const cidade = document.getElementById("cidade").value;
-    const dia = document.getElementById("diaSemana").value;
+    const data  = getDataFormatada();
+    const sup   = document.getElementById("supervisor").value;
+    const vend  = document.getElementById("vendedor").value;
+    const cid   = document.getElementById("cidade").value;
+    const dia   = document.getElementById("diaSemana").value;
     const turno = document.getElementById("turno").value;
     document.getElementById("resumo-texto").innerHTML =
-      `📅 ${data} · ${dia} ${turno}<br>👤 ${sup} acompanhou ${vend}<br>📍 ${cidade} · ⭐ Média: ${mediaGeral()}/5`;
+      `📅 ${data} · ${dia} — ${turno}<br>👤 <b>${sup}</b> acompanhou <b>${vend}</b><br>📍 ${cid} · ⭐ Média: <b>${mediaGeral()}/5</b>`;
   }
   etapaAtual = n;
   atualizarBarraEtapas();
@@ -463,34 +571,31 @@ function atualizarBarraEtapas() {
   });
 }
 
-// ── Enviar ────────────────────────────────────────────────────
 function getFormData() {
   return {
-    supervisor:   document.getElementById("supervisor").value,
-    vendedor:     document.getElementById("vendedor").value,
-    diaSemana:    document.getElementById("diaSemana").value,
-    turno:        document.getElementById("turno").value,
-    diaNum:       document.getElementById("diaNum").value,
-    mes:          document.getElementById("mes").value,
-    ano:          document.getElementById("ano").value,
-    cidade:       document.getElementById("cidade").value,
-    clientes:     document.getElementById("clientes").value,
-    destaques:    document.getElementById("destaques").value,
+    supervisor:     document.getElementById("supervisor").value,
+    vendedor:       document.getElementById("vendedor").value,
+    diaSemana:      document.getElementById("diaSemana").value,
+    turno:          document.getElementById("turno").value,
+    diaNum:         document.getElementById("diaNum").value,
+    mes:            document.getElementById("mes").value,
+    ano:            document.getElementById("ano").value,
+    cidade:         document.getElementById("cidade").value,
+    clientes:       document.getElementById("clientes").value,
+    destaques:      document.getElementById("destaques").value,
     pontosMelhoria: document.getElementById("pontosMelhoria").value,
-    acoes:        document.getElementById("acoes").value,
-    dataFormatada: getDataFormatada(),
-    estoque:      { ...notas.estoque },
-    validade:     { ...notas.validade },
-    abordagem:    { ...notas.abordagem },
-    mix:          { ...notas.mix },
-    organizacao:  { ...notas.organizacao },
+    acoes:          document.getElementById("acoes").value,
+    dataFormatada:  getDataFormatada(),
+    estoque:     { ...notas.estoque },
+    validade:    { ...notas.validade },
+    abordagem:   { ...notas.abordagem },
+    mix:         { ...notas.mix },
+    organizacao: { ...notas.organizacao },
     id: Date.now(),
   };
 }
 
-function loadFeedbacks() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); } catch { return []; }
-}
+function loadFeedbacks() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); } catch { return []; } }
 function saveFeedbacks(l) { localStorage.setItem(STORAGE_KEY, JSON.stringify(l)); }
 
 async function enviar() {
@@ -498,7 +603,6 @@ async function enviar() {
   const lista = loadFeedbacks();
   lista.push(f);
   saveFeedbacks(lista);
-
   mostrarTela("tela-sending");
   document.getElementById("etapas-bar").classList.add("hidden");
 
@@ -506,10 +610,10 @@ async function enviar() {
     data: f.dataFormatada, diaSemana: f.diaSemana, turno: f.turno,
     supervisor: f.supervisor, vendedor: f.vendedor,
     cidade: f.cidade, clientes: f.clientes,
-    estoque_nota: f.estoque.nota,     estoque_obs: f.estoque.obs,
-    validade_nota: f.validade.nota,   validade_obs: f.validade.obs,
-    abordagem_nota: f.abordagem.nota, abordagem_obs: f.abordagem.obs,
-    mix_nota: f.mix.nota,             mix_obs: f.mix.obs,
+    estoque_nota: f.estoque.nota,      estoque_obs: f.estoque.obs,
+    validade_nota: f.validade.nota,    validade_obs: f.validade.obs,
+    abordagem_nota: f.abordagem.nota,  abordagem_obs: f.abordagem.obs,
+    mix_nota: f.mix.nota,              mix_obs: f.mix.obs,
     organizacao_nota: f.organizacao.nota, organizacao_obs: f.organizacao.obs,
     media: mediaGeral(),
     destaques: f.destaques, pontosMelhoria: f.pontosMelhoria, acoes: f.acoes,
@@ -517,8 +621,8 @@ async function enviar() {
 
   try {
     await fetch(SCRIPT_URL, {
-      method: "POST", mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      method:"POST", mode:"no-cors",
+      headers:{"Content-Type":"application/json"},
       body: JSON.stringify(payload),
     });
     document.getElementById("success-count").textContent =
@@ -530,16 +634,8 @@ async function enviar() {
 }
 
 function novoFeedback() {
-  document.getElementById("supervisor").value = "";
-  document.getElementById("vendedor").value = "";
-  document.getElementById("diaNum").value = "";
-  document.getElementById("diaSemana").value = "";
-  document.getElementById("turno").value = "";
-  document.getElementById("cidade").value = "";
-  document.getElementById("clientes").value = "";
-  document.getElementById("destaques").value = "";
-  document.getElementById("pontosMelhoria").value = "";
-  document.getElementById("acoes").value = "";
+  ["supervisor","vendedor","diaNum","diaSemana","turno","cidade","clientes","destaques","pontosMelhoria","acoes"]
+    .forEach(id => document.getElementById(id).value = "");
   document.getElementById("data-preview-text").textContent = "";
   notas = {};
   renderCriterios();
@@ -549,60 +645,52 @@ function novoFeedback() {
   document.getElementById("etapas-bar").classList.remove("hidden");
 }
 
-// ── Histórico ─────────────────────────────────────────────────
 function renderHistorico() {
   const lista = loadFeedbacks();
-  document.getElementById("hist-titulo").textContent = `📊 Histórico — ${lista.length} registro(s)`;
+  document.getElementById("hist-titulo").textContent = `Histórico — ${lista.length} registro(s)`;
   const cont = document.getElementById("hist-lista");
   if (lista.length === 0) {
-    cont.innerHTML = '<div style="color:#64748b;text-align:center;padding:20px">Nenhum feedback ainda.</div>';
+    cont.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px">Nenhum feedback ainda.</div>';
     return;
   }
+  const corMedia = m => Number(m)>=4?"#16a34a":Number(m)>=3?"#d97706":"#dc2626";
   cont.innerHTML = lista.slice().reverse().map(f => {
     const m = (criterios.reduce((a,c)=>a+(f[c.key]?.nota||0),0)/criterios.length).toFixed(1);
-    const cor = Number(m)>=4?"#22c55e":Number(m)>=3?"#eab308":"#ef4444";
     return `
-      <div class="hist-item" style="border-left:3px solid ${cor}">
+      <div class="hist-item" style="border-left:4px solid ${corMedia(m)}">
         <div class="hist-top">
           <span class="hist-nome">${f.supervisor}</span>
           <span class="hist-data">${f.dataFormatada}</span>
         </div>
         <div class="hist-sub">👤 ${f.vendedor} · 📍 ${f.cidade} · ${f.diaSemana} ${f.turno}</div>
         <div class="hist-media">⭐ Média: ${m}/5</div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 }
 
-// ── Excel ─────────────────────────────────────────────────────
 function baixarExcel() {
   const lista = loadFeedbacks();
   if (lista.length === 0) { alert("Nenhum feedback para exportar."); return; }
-  const cab = [
-    "Data","Dia da Semana","Turno","Supervisor","Vendedor","Cidade","Clientes",
+  const cab = ["Data","Dia da Semana","Turno","Supervisor","Vendedor","Cidade","Clientes",
     "Estoque (nota)","Estoque (obs)","Validade (nota)","Validade (obs)",
     "Abordagem (nota)","Abordagem (obs)","Mix (nota)","Mix (obs)",
     "Organização (nota)","Organização (obs)","Média Geral",
-    "Destaques","Pontos de Melhoria","Ações Combinadas",
-  ];
+    "Destaques","Pontos de Melhoria","Ações Combinadas"];
   const linhas = lista.map(f => {
     const m = (criterios.reduce((a,c)=>a+(f[c.key]?.nota||0),0)/criterios.length).toFixed(1);
-    return [
-      f.dataFormatada, f.diaSemana, f.turno, f.supervisor, f.vendedor, f.cidade, f.clientes,
-      f.estoque?.nota, f.estoque?.obs, f.validade?.nota, f.validade?.obs,
-      f.abordagem?.nota, f.abordagem?.obs, f.mix?.nota, f.mix?.obs,
-      f.organizacao?.nota, f.organizacao?.obs, m,
-      f.destaques, f.pontosMelhoria, f.acoes,
-    ];
+    return [f.dataFormatada,f.diaSemana,f.turno,f.supervisor,f.vendedor,f.cidade,f.clientes,
+      f.estoque?.nota,f.estoque?.obs,f.validade?.nota,f.validade?.obs,
+      f.abordagem?.nota,f.abordagem?.obs,f.mix?.nota,f.mix?.obs,
+      f.organizacao?.nota,f.organizacao?.obs,m,f.destaques,f.pontosMelhoria,f.acoes];
   });
-  const ws = XLSX.utils.aoa_to_sheet([cab, ...linhas]);
-  ws["!cols"] = cab.map((_,i) => ({wch:[12,14,8,20,20,16,30,10,28,10,28,10,28,10,28,10,28,8,35,35,35][i]||20}));
+  const ws = XLSX.utils.aoa_to_sheet([cab,...linhas]);
+  ws["!cols"] = cab.map((_,i)=>({wch:[12,14,8,20,20,16,30,10,28,10,28,10,28,10,28,10,28,8,35,35,35][i]||20}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Feedbacks");
-  const b64 = XLSX.write(wb, {bookType:"xlsx", type:"base64"});
+  const b64 = XLSX.write(wb,{bookType:"xlsx",type:"base64"});
   const a = document.createElement("a");
   a.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${b64}`;
-  a.download = `feedbacks_${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.download = `feedbacks_rota_${new Date().toISOString().slice(0,10)}.xlsx`;
   a.click();
 }
 </script>
