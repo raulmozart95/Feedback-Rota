@@ -136,13 +136,13 @@
 </header>
 
 <main>
-  <div id="avisoAmostra" class="amostra" hidden>Exemplo carregado: planilha DDV de 15/06/2026 (7 lojas) vinculada à base de produtos da Rota. Anexe a planilha da semana para gerar o pedido real.</div>
+  <div id="avisoAmostra" class="amostra" hidden>Exemplo carregado: planilha DDV de 08/10/2026 (7 lojas) vinculada à base de produtos da Rota. Anexe a planilha da semana para gerar o pedido real.</div>
 
   <section class="topo">
     <div class="painel">
       <h2>1 · Planilhas</h2>
       <div class="drop" id="drop">
-        <p><strong>Estoque do cliente (DDV).</strong> Arraste aqui ou escolha o arquivo .xls, .xlsx ou .csv com Loja, Código, Descrição, Código de Barras, Estoque, DDV e custo.</p>
+        <p><strong>Estoque do cliente (DDV).</strong> Arraste aqui ou escolha o arquivo .xls, .xlsx ou .csv no modelo padrão: Loja, Descrição, Código de Barras, Estoque, DDV, Última Entrada, Última Venda, Cust c/ Impos e Preço Venda.</p>
         <label class="btn amarelo" for="arquivo">Escolher DDV</label>
         <input type="file" id="arquivo" accept=".xls,.xlsx,.csv" hidden/>
       </div>
@@ -187,7 +187,7 @@
       </div>
       <div class="filtros">
         <select id="fGrupo" aria-label="Filtrar indústria"><option value="">Todas as indústrias</option></select>
-        <input type="search" id="fBusca" placeholder="Buscar produto, código ou EAN" aria-label="Buscar produto"/>
+        <input type="search" id="fBusca" placeholder="Buscar produto ou código de barras" aria-label="Buscar produto"/>
         <label class="chk" for="fSoPedido" id="lblSoPedido"><input type="checkbox" id="fSoPedido" checked/> Só itens com pedido</label>
         <label class="chk" for="fSemVinc" id="lblSemVinc" hidden><input type="checkbox" id="fSemVinc"/> Só não vinculados</label>
       </div>
@@ -219,12 +219,15 @@ const curta = loja => loja.split(' - ')[0];
 const soDig = v => typeof v === 'number' ? String(Math.round(v)) : String(v ?? '').replace(/\D/g, '');
 const eanN = v => soDig(v).replace(/^0+/, '');
 const SEM_GRUPO = 'Sem vínculo na base';
+const data = s => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? new Date(+m[3], m[2] - 1, +m[1]) : null; };
+const DIA = 864e5;
 
 let linhas = [];            // dados normalizados da planilha DDV
-let ajustes = {};           // loja|codigo → quantidade manual
+let ajustes = {};           // loja|código de barras → quantidade manual
 let base = null;            // { origem, data, itens: [[codigo, descricao, com, log, grupo, fator, peso]] }
 let porCom = new Map(), porLog = new Map();
 let aba = 'loja';
+let dataRef = null;         // data da venda mais recente da planilha
 let lojaSel = '';           // '' = todas
 
 const store = {
@@ -236,12 +239,12 @@ const store = {
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const COLS = {
   loja: ['loja', 'filial'],
-  codigo: ['codigo', 'cod', 'codproduto', 'codigointerno'],
   descricao: ['descricao', 'produto', 'desc'],
   ean: ['codigodebarras', 'ean', 'codbarras', 'gtin'],
   estoque: ['estoque', 'estoqueatual', 'saldo'],
   ddv: ['ddv', 'diasdevenda', 'cobertura'],
   entrada: ['ultimaentrada', 'dtultimaentrada'],
+  ultVenda: ['ultimavenda', 'dtultimavenda'],
   custo: ['custcimpos', 'custocimpostos', 'custo', 'custocomimpostos'],
   preco: ['precovenda', 'preco', 'pvenda'],
 };
@@ -267,13 +270,14 @@ function lerMatriz(m) {
   const hi = m.slice(0, 15).findIndex(r => { const h = r.map(norm); return h.includes('estoque') && h.includes('ddv'); });
   if (hi < 0) throw new Error('Não encontrei as colunas "Estoque" e "DDV" nas primeiras linhas da planilha.');
   const idx = indices(m[hi].map(norm), COLS);
-  const faltam = ['codigo', 'descricao', 'estoque', 'ddv'].filter(k => idx[k] < 0);
-  if (faltam.length) throw new Error('Colunas obrigatórias ausentes: ' + faltam.join(', '));
+  const NOMES = { loja: 'Loja', descricao: 'Descrição', ean: 'Código de Barras', estoque: 'Estoque', ddv: 'DDV' };
+  const faltam = Object.keys(NOMES).filter(k => idx[k] < 0);
+  if (faltam.length) throw new Error('A planilha não segue o modelo padrão. Colunas ausentes: ' + faltam.map(k => NOMES[k]).join(', '));
   const g = (r, k) => idx[k] >= 0 ? r[idx[k]] : '';
-  return m.slice(hi + 1).filter(r => r && String(g(r, 'codigo')).trim() !== '').map(r => [
-    String(g(r, 'loja') || 'Loja única').trim(), String(g(r, 'codigo')).trim(), String(g(r, 'descricao')).trim(),
-    soDig(g(r, 'ean')), numero(g(r, 'estoque')), numero(g(r, 'ddv')),
-    String(g(r, 'entrada') || '').trim(), numero(g(r, 'custo')), numero(g(r, 'preco')),
+  return m.slice(hi + 1).filter(r => r && (soDig(g(r, 'ean')) || String(g(r, 'descricao')).trim())).map(r => [
+    String(g(r, 'loja')).trim() || 'Loja não informada', String(g(r, 'descricao')).trim(), soDig(g(r, 'ean')),
+    numero(g(r, 'estoque')), numero(g(r, 'ddv')), String(g(r, 'entrada') || '').trim(), String(g(r, 'ultVenda') || '').trim(),
+    numero(g(r, 'custo')), numero(g(r, 'preco')),
   ]);
 }
 function lerBase(wb) {
@@ -314,8 +318,10 @@ function vincular(l) {
   return r2 ? { ...r2, via: 'CODBARLOG' } : null;
 }
 function carregar(dados, nome, amostra = false) {
-  linhas = dados.map(r => ({ loja: r[0], codigo: r[1], descricao: r[2], ean: r[3], estoque: r[4], ddv: r[5], entrada: r[6], custo: r[7], preco: r[8] }));
-  linhas.forEach(l => { l.chave = l.loja + '|' + l.codigo; l.prod = l.ean ? eanN(l.ean) : 'c:' + l.codigo; });
+  linhas = dados.map(r => ({ loja: r[0], descricao: r[1], ean: r[2], estoque: r[3], ddv: r[4], entrada: r[5], ultVenda: r[6], custo: r[7], preco: r[8] }));
+  linhas.forEach(l => { l.prod = eanN(l.ean) || 'd:' + norm(l.descricao); l.chave = l.loja + '|' + l.prod; l.dtVenda = data(l.ultVenda); });
+  // referência = venda mais recente do arquivo (dia em que o cliente extraiu a planilha)
+  dataRef = linhas.reduce((m, l) => l.dtVenda && l.dtVenda > m ? l.dtVenda : m, null);
   ajustes = {}; lojaSel = '';
   $('#avisoAmostra').hidden = !amostra;
   $('#infoArquivo').textContent = `${nome} · ${fmtN(linhas.length)} linhas · ${new Set(linhas.map(l => l.loja)).size} lojas · ${fmtN(new Set(linhas.map(l => l.prod)).size)} produtos`;
@@ -330,6 +336,7 @@ function calcular() {
   for (const l of linhas) {
     const est = l.estoque, ddv = l.ddv;
     l.alertas = [];
+    l.diasSemVenda = l.dtVenda && dataRef ? Math.round((dataRef - l.dtVenda) / DIA) : null;
     l.r = vincular(l);
     l.grupo = l.r?.grupo || SEM_GRUPO;
     l.fator = l.r?.fator || 0;
@@ -341,15 +348,20 @@ function calcular() {
       l.situacao = 'inventario'; l.sugestao = 0;
       l.alertas.unshift(`Estoque negativo (${fmtN(est)}): fazer inventário antes de pedir`);
     } else if (l.venda === null) {
-      l.situacao = 'sem'; l.sugestao = 0;
-      l.alertas.push('Sem giro calculável (estoque e DDV zerados): definir quantidade manualmente');
+      l.sugestao = 0;
+      if (l.diasSemVenda !== null && l.diasSemVenda <= 15) {
+        l.situacao = 'ruptura';
+        l.alertas.push(`Ruptura: vendeu em ${l.ultVenda.slice(0, 10)} e está sem estoque; sem DDV não dá para calcular, definir quantidade manualmente`);
+      } else {
+        l.situacao = 'sem';
+        l.alertas.push('Sem giro calculável (estoque e DDV zerados): definir quantidade manualmente');
+      }
     } else {
       const nec = l.venda * (cob + ent) - est;
       l.sugestao = nec > 0 ? Math.ceil(nec) : 0;
       const cobAtual = l.venda > 0 ? est / l.venda : Infinity;
       l.situacao = l.sugestao > 0 ? 'pedir' : cobAtual > 90 ? 'excesso' : 'ok';
     }
-    if (base && !l.r) l.alertas.push('Código de barras sem vínculo na base Rota (sem indústria, caixa e peso)');
     if (l.r?.duplicado) l.alertas.push('Código de barras repetido em mais de um produto na base Rota');
     l.ajustado = l.chave in ajustes && l.situacao !== 'inventario';
     l.qtd = l.ajustado ? ajustes[l.chave] : l.sugestao;
@@ -357,6 +369,7 @@ function calcular() {
     l.caixas = l.fator ? l.qtd / l.fator : 0;
     l.peso = l.r ? l.qtd * l.r.peso : 0;
     l.cobPos = l.venda > 0 ? (Math.max(0, est) + l.qtd) / l.venda : null;
+    if (l.qtd > 0 && l.diasSemVenda > 30) l.alertas.push(`Sem venda há ${l.diasSemVenda} dias (última em ${l.ultVenda.slice(0, 10)})`);
   }
   const grupos = [...new Set(linhas.map(l => l.grupo))].sort((a, b) => (a === SEM_GRUPO) - (b === SEM_GRUPO) || a.localeCompare(b));
   const sel = $('#fGrupo').value;
@@ -377,18 +390,18 @@ function agrupar(lst, chave, extra) {
   }
   return [...m.values()].sort((a, b) => b.total - a.total);
 }
-const porProduto = lst => agrupar(lst, l => l.prod, l => ({ codigo: l.codigo, descricao: l.descricao, ean: l.ean, r: l.r, grupo: l.grupo, fator: l.fator, custo: l.custo }));
+const porProduto = lst => agrupar(lst, l => l.prod, l => ({ descricao: l.descricao, ean: l.ean, r: l.r, grupo: l.grupo, fator: l.fator, custo: l.custo }));
 const porGrupo = lst => agrupar(lst, l => l.grupo, l => ({ grupo: l.grupo, produtos: new Set() }));
 
 /* ---------- visualização ---------- */
 const CHIPS = {
   pedir: '<span class="chip c-pedir">Pedir</span>', ok: '<span class="chip c-ok">Coberto</span>',
   excesso: '<span class="chip c-excesso">Excesso</span>', sem: '<span class="chip c-sem">Sem giro</span>',
-  inventario: '<span class="chip c-inventario">Inventário</span>',
+  inventario: '<span class="chip c-inventario">Inventário</span>', ruptura: '<span class="chip c-alerta">Ruptura</span>',
 };
 const daLoja = l => !lojaSel || l.loja === lojaSel;
 const doGrupo = l => !$('#fGrupo').value || l.grupo === $('#fGrupo').value;
-function busca(l) { const q = norm($('#fBusca').value); return !q || norm(l.descricao + l.codigo + l.ean + (l.r?.codigo || '')).includes(q); }
+function busca(l) { const q = norm($('#fBusca').value); return !q || norm(l.descricao + l.ean + (l.r?.codigo || '')).includes(q); }
 function filtradas() {
   const so = $('#fSoPedido').checked;
   return linhas.filter(l => daLoja(l) && doGrupo(l) && busca(l) && (aba === 'alerta' ? l.alertas.length > 0 : !so || l.qtd > 0));
@@ -442,27 +455,27 @@ function render() {
   if (aba === 'base') {
     const so = $('#fSemVinc').checked;
     const cs = prods.filter(p => doGrupo(p) && busca(p) && (!so || !p.r)).sort((a, b) => (!!a.r - !!b.r) || a.descricao.localeCompare(b.descricao));
-    t.innerHTML = `<thead><tr><th>Cód. loja</th><th>Descrição na loja</th><th>EAN</th><th>Vínculo</th><th>Cód. Rota</th><th>Descrição Rota</th><th>Indústria</th><th class="num">Fator (un./cx)</th><th class="num">Peso bruto un.</th></tr></thead><tbody>`
+    t.innerHTML = `<thead><tr><th>Código de barras</th><th>Descrição na loja</th><th>Vínculo</th><th>Cód. Rota</th><th>Descrição Rota</th><th>Indústria</th><th class="num">Fator (un./cx)</th><th class="num">Peso bruto un.</th></tr></thead><tbody>`
       + (cs.length ? cs.map(c => { const r = c.r; return `<tr>
-        <td>${esc(c.codigo)}</td><td class="desc">${esc(c.descricao)}</td><td class="fraco">${esc(c.ean)}</td>
+        <td>${esc(c.ean)}</td><td class="desc">${esc(c.descricao)}</td>
         <td>${r ? `<span class="chip c-ok">Vinculado</span>${r.via === 'CODBARLOG' ? ' <span class="chip c-alerta">via CODBARLOG</span>' : ''}${r.duplicado ? ' <span class="chip c-alerta">EAN repetido</span>' : ''}` : '<span class="chip c-sem">Sem vínculo</span>'}</td>
         ${r ? `<td>${esc(r.codigo)}</td><td class="desc">${esc(r.descricao)}</td><td>${esc(r.grupo)}</td><td class="num">${r.fator}</td><td class="num">${fmtN(r.peso, 3)} kg</td>` : '<td colspan="5" class="fraco">Código de barras não encontrado na base Rota.</td>'}</tr>`; }).join('')
-        : '<tr><td colspan="9" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
+        : '<tr><td colspan="8" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
     return;
   }
 
   const rows = filtradas();
   if (aba === 'cons') {
     const cs = porProduto(rows);
-    t.innerHTML = `<thead><tr><th>Cód. loja</th><th>Descrição</th><th>Indústria</th><th class="num">Lojas</th><th class="num">Estoque lojas</th><th class="num">Venda/dia total</th><th class="num">Pedido (un.)</th><th class="num">Fator</th><th class="num">Caixas</th><th class="num">Peso</th><th class="num">Total</th></tr></thead><tbody>`
-      + (cs.length ? cs.map(c => `<tr class="${c.qtd > 0 ? 'pedir' : ''}"><td>${esc(c.codigo)}</td><td class="desc">${esc(c.descricao)}</td><td>${esc(c.grupo)}</td><td class="num">${c.lojas.size}</td><td class="num">${fmtN(c.estoque)}</td><td class="num">${fmtN(c.venda, 2)}</td><td class="num"><strong>${fmtN(c.qtd)}</strong></td><td class="num">${c.fator || '<span class="fraco">—</span>'}</td><td class="num">${fmtCx(c.caixas, c.fator)}</td><td class="num">${fmtKg(c.peso)}</td><td class="num">${fmtR(c.total)}</td></tr>`).join('')
+    t.innerHTML = `<thead><tr><th>Código de barras</th><th>Descrição</th><th>Indústria</th><th class="num">Lojas</th><th class="num">Estoque lojas</th><th class="num">Venda/dia total</th><th class="num">Pedido (un.)</th><th class="num">Fator</th><th class="num">Caixas</th><th class="num">Peso</th><th class="num">Total</th></tr></thead><tbody>`
+      + (cs.length ? cs.map(c => `<tr class="${c.qtd > 0 ? 'pedir' : ''}"><td>${esc(c.ean)}</td><td class="desc">${esc(c.descricao)}</td><td>${esc(c.grupo)}</td><td class="num">${c.lojas.size}</td><td class="num">${fmtN(c.estoque)}</td><td class="num">${fmtN(c.venda, 2)}</td><td class="num"><strong>${fmtN(c.qtd)}</strong></td><td class="num">${c.fator || '<span class="fraco">—</span>'}</td><td class="num">${fmtCx(c.caixas, c.fator)}</td><td class="num">${fmtKg(c.peso)}</td><td class="num">${fmtR(c.total)}</td></tr>`).join('')
         : '<tr><td colspan="11" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
     return;
   }
   const lim = 1500, vis = rows.slice(0, lim), alerta = aba === 'alerta';
-  t.innerHTML = `<thead><tr><th>Loja</th><th>Código</th><th>Descrição</th><th>Indústria</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido (un.)</th><th class="num">Caixas</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${alerta ? '<th>Motivo</th>' : '<th>Últ. entrada</th>'}</tr></thead><tbody>`
+  t.innerHTML = `<thead><tr><th>Loja</th><th>Código de barras</th><th>Descrição</th><th>Indústria</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido (un.)</th><th class="num">Caixas</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${alerta ? '<th>Motivo</th>' : '<th>Últ. venda</th>'}</tr></thead><tbody>`
     + (vis.length ? vis.map(l => `<tr class="${l.situacao === 'inventario' ? 'inventario' : l.qtd > 0 ? 'pedir' : ''}">
-      <td>${esc(curta(l.loja))}</td><td>${esc(l.codigo)}</td><td class="desc">${esc(l.descricao)}</td>
+      <td>${esc(curta(l.loja))}</td><td class="fraco">${esc(l.ean)}</td><td class="desc">${esc(l.descricao)}</td>
       <td class="${l.r ? '' : 'fraco'}">${esc(l.r ? l.grupo : '—')}</td>
       <td class="num">${fmtN(l.estoque)}</td><td class="num">${fmtN(l.ddv)}</td>
       <td class="num">${l.venda === null ? '<span class="fraco">—</span>' : fmtN(l.venda, 2)}</td>
@@ -471,8 +484,8 @@ function render() {
       <td class="num">${l.qtd ? fmtCx(l.caixas, l.fator) : '<span class="fraco">—</span>'}</td>
       <td class="num">${l.cobPos === null || l.situacao === 'inventario' ? '<span class="fraco">—</span>' : fmtN(l.cobPos) + ' d'}</td>
       <td class="num">${fmtR(l.custo)}</td><td class="num">${fmtR(l.total)}</td>
-      <td>${CHIPS[l.situacao]}${l.alertas.length && !['sem', 'inventario'].includes(l.situacao) ? ' <span class="chip c-alerta">Revisar</span>' : ''}</td>
-      <td class="${alerta ? '' : 'fraco'}">${alerta ? esc(l.alertas.join(' · ')) : esc(l.entrada)}</td></tr>`).join('')
+      <td>${CHIPS[l.situacao]}${l.alertas.length && !['sem', 'ruptura', 'inventario'].includes(l.situacao) ? ' <span class="chip c-alerta">Revisar</span>' : ''}</td>
+      <td class="${alerta ? '' : 'fraco'}">${alerta ? esc(l.alertas.join(' · ')) : esc(l.ultVenda || l.entrada)}</td></tr>`).join('')
       : `<tr><td colspan="15" class="vazio">Nenhuma linha com esse filtro.</td></tr>`)
     + (rows.length > lim ? `<tr><td colspan="15" class="vazio">Mostrando ${lim} de ${fmtN(rows.length)} linhas. Escolha uma loja ou busque um produto para ver o restante.</td></tr>` : '')
     + '</tbody>';
@@ -484,10 +497,10 @@ const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d
 const r2 = n => +(+n).toFixed(2);
 function linhasPedido(lst) {
   return lst.filter(l => l.qtd > 0).sort((a, b) => a.grupo.localeCompare(b.grupo) || a.descricao.localeCompare(b.descricao)).map(l => ({
-    Loja: l.loja, 'Indústria': l.r ? l.grupo : '', 'Cód. loja': l.codigo, 'Descrição': l.descricao, 'Código de Barras': l.ean, 'Cód. Rota': l.r?.codigo || '',
+    Loja: l.loja, 'Indústria': l.r ? l.grupo : '', 'Código de Barras': l.ean, 'Descrição': l.descricao, 'Cód. Rota': l.r?.codigo || '',
     'Pedido (un.)': l.qtd, 'Fator': l.fator || '', 'Caixas': l.fator ? r2(l.caixas) : '', 'Peso bruto (kg)': l.r ? r2(l.peso) : '',
     'Custo un.': l.custo, 'Total': r2(l.total), 'Estoque': l.estoque, 'DDV': l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda),
-    'Sugestão': l.sugestao, 'Ajuste manual': l.ajustado ? 'Sim' : '', 'Alertas': l.alertas.join(' · ') }));
+    'Sugestão': l.sugestao, 'Última venda': l.ultVenda, 'Ajuste manual': l.ajustado ? 'Sim' : '', 'Alertas': l.alertas.join(' · ') }));
 }
 function baixar(wb, nome) {
   try { XLSX.writeFile(wb, nome); toast('Arquivo gerado: ' + nome); }
@@ -508,7 +521,7 @@ function exportar() {
     const rows = linhasPedido(lst.filter(l => l.loja === lj));
     if (rows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), nomeAba(curta(lj)));
   }
-  const inv = lst.filter(l => l.situacao === 'inventario').map(l => ({ Loja: l.loja, 'Código': l.codigo, 'Descrição': l.descricao, 'Código de Barras': l.ean, 'Estoque no sistema': l.estoque, 'Última entrada': l.entrada }));
+  const inv = lst.filter(l => l.situacao === 'inventario').map(l => ({ Loja: l.loja, 'Código de Barras': l.ean, 'Descrição': l.descricao, 'Estoque no sistema': l.estoque, 'Última entrada': l.entrada, 'Última venda': l.ultVenda }));
   if (inv.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inv), 'Inventário pendente');
   baixar(wb, `Pedido_Rota_${lojaSel ? nomeAba(curta(lojaSel)).replace(/\s+/g, '') + '_' : ''}${hoje()}.xlsx`);
 }
@@ -525,13 +538,13 @@ function copiar() {
   const lst = linhas.filter(l => daLoja(l) && doGrupo(l) && busca(l));
   if (aba === 'ind') return copiarTsv([['Indústria', 'Itens', 'Lojas', 'Unidades', 'Caixas', 'Peso bruto (kg)', 'Total'],
     ...porGrupo(lst).filter(g => g.qtd > 0).map(g => [g.grupo, g.itens, g.lojas.size, g.qtd, fmtN(g.caixas, 2), fmtN(g.peso, 2), fmtN(g.total, 2)])]);
-  if (aba === 'base') return copiarTsv([['Cód. loja', 'Descrição loja', 'EAN', 'Vínculo', 'Cód. Rota', 'Descrição Rota', 'Indústria', 'Fator', 'Peso bruto un. (kg)'],
-    ...porProduto(linhas).filter(p => busca(p) && (!$('#fSemVinc').checked || !p.r)).map(c => [c.codigo, c.descricao, c.ean, c.r ? 'Vinculado' : 'Sem vínculo', c.r?.codigo || '', c.r?.descricao || '', c.r?.grupo || '', c.r?.fator || '', c.r ? fmtN(c.r.peso, 3) : ''])]);
+  if (aba === 'base') return copiarTsv([['Código de Barras', 'Descrição loja', 'Vínculo', 'Cód. Rota', 'Descrição Rota', 'Indústria', 'Fator', 'Peso bruto un. (kg)'],
+    ...porProduto(linhas).filter(p => busca(p) && (!$('#fSemVinc').checked || !p.r)).map(c => [c.ean, c.descricao, c.r ? 'Vinculado' : 'Sem vínculo', c.r?.codigo || '', c.r?.descricao || '', c.r?.grupo || '', c.r?.fator || '', c.r ? fmtN(c.r.peso, 3) : ''])]);
   const rows = filtradas();
-  if (aba === 'cons') return copiarTsv([['Cód. loja', 'Descrição', 'Indústria', 'Lojas', 'Pedido (un.)', 'Fator', 'Caixas', 'Peso (kg)', 'Total'],
-    ...porProduto(rows).map(c => [c.codigo, c.descricao, c.grupo, c.lojas.size, c.qtd, c.fator || '', c.fator ? fmtN(c.caixas, 2) : '', fmtN(c.peso, 2), fmtN(c.total, 2)])]);
-  copiarTsv([['Loja', 'Indústria', 'Código', 'Descrição', 'EAN', 'Pedido (un.)', 'Caixas', 'Peso (kg)', 'Custo un.', 'Total', 'Estoque', 'DDV', 'Venda/dia', 'Situação'],
-    ...rows.map(l => [l.loja, l.r ? l.grupo : '', l.codigo, l.descricao, l.ean, l.qtd, l.fator ? fmtN(l.caixas, 2) : '', l.r ? fmtN(l.peso, 2) : '', fmtN(l.custo, 2), fmtN(l.total, 2), l.estoque, l.ddv, l.venda === null ? '' : fmtN(l.venda, 2), l.situacao])]);
+  if (aba === 'cons') return copiarTsv([['Código de Barras', 'Descrição', 'Indústria', 'Lojas', 'Pedido (un.)', 'Fator', 'Caixas', 'Peso (kg)', 'Total'],
+    ...porProduto(rows).map(c => [c.ean, c.descricao, c.grupo, c.lojas.size, c.qtd, c.fator || '', c.fator ? fmtN(c.caixas, 2) : '', fmtN(c.peso, 2), fmtN(c.total, 2)])]);
+  copiarTsv([['Loja', 'Indústria', 'Código de Barras', 'Descrição', 'Pedido (un.)', 'Caixas', 'Peso (kg)', 'Custo un.', 'Total', 'Estoque', 'DDV', 'Venda/dia', 'Situação'],
+    ...rows.map(l => [l.loja, l.r ? l.grupo : '', l.ean, l.descricao, l.qtd, l.fator ? fmtN(l.caixas, 2) : '', l.r ? fmtN(l.peso, 2) : '', fmtN(l.custo, 2), fmtN(l.total, 2), l.estoque, l.ddv, l.venda === null ? '' : fmtN(l.venda, 2), l.situacao])]);
 }
 
 /* ---------- eventos ---------- */
@@ -575,7 +588,7 @@ $('#btnLimpar').addEventListener('click', () => { ajustes = {}; calcular(); toas
 
 base = store.get('rota.base', null) || BASE_EMBUTIDA;
 indexarBase();
-if (AMOSTRA) carregar(AMOSTRA, 'DDV_ROTA_15062026.xls', true); else render();
+if (AMOSTRA) carregar(AMOSTRA, 'ddv_0810.xls', true); else render();
 </script>
 </body>
 </html>
