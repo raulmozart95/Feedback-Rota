@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&display=swap"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  /* Layout: barra da marca → parâmetros + upload → resumo → abas (pedido / consolidado / alertas) com tabela rolável */
+  /* Layout: barra da marca → planilha + parâmetros → resumo → lojas → abas (pedido / produto / revisar / embalagens) com tabela rolável */
   :root {
     --azul: #1A3A8F; --azul-dark: #112970; --amarelo: #F5A623;
     --bg: #eef2fb; --surface: #ffffff; --surface-2: #f6f8fe;
@@ -52,16 +52,15 @@
   .drop strong { font-family: var(--f-display); }
   .arquivo { font-size: 12px; color: var(--muted); margin-top: 8px; word-break: break-word; }
 
-  .btn { font-family: var(--f-display); font-weight: 700; font-size: 13px; border-radius: 8px; padding: 9px 14px; cursor: pointer; border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+  .btn { font-family: var(--f-display); font-weight: 700; font-size: 13px; border-radius: 8px; padding: 9px 14px; cursor: pointer; border: 1.5px solid var(--accent); background: var(--accent); color: var(--accent-fg); display: inline-block; }
   .btn.sec { background: transparent; color: var(--accent); }
   .btn.amarelo { background: var(--amarelo); border-color: var(--amarelo); color: #1b2440; }
-  .btn:focus-visible, input:focus-visible, select:focus-visible, .aba:focus-visible { outline: 3px solid var(--amarelo); outline-offset: 2px; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, .aba:focus-visible, .loja:focus-visible { outline: 3px solid var(--amarelo); outline-offset: 2px; }
 
-  .params { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 480px) { .params { grid-template-columns: 1fr 1fr; } }
+  .params { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   label.campo { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
   input, select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--borda); border-radius: 7px; padding: 7px 9px; width: 100%; min-width: 0; }
-  .formula { margin-top: 12px; font-size: 12.5px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+  .formula { margin-top: 12px; font-size: 12.5px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
   .formula code { font-family: inherit; font-weight: 700; color: var(--fg); }
 
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
@@ -69,6 +68,15 @@
   .kpi .v { font-family: var(--f-display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
   .kpi .l { font-size: 12px; color: var(--muted); }
   .kpi.destaque { border-color: var(--amarelo); box-shadow: inset 0 -3px 0 var(--amarelo); }
+  .kpi.alerta .v { color: var(--bad); }
+
+  .lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .loja { text-align: left; font: inherit; color: var(--fg); background: var(--surface-2); border: 1.5px solid var(--borda); border-radius: 9px; padding: 9px 11px; cursor: pointer; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
+  .loja .nome { font-family: var(--f-display); font-weight: 800; font-size: 13px; }
+  .loja .val { font-weight: 700; }
+  .loja .det { font-size: 11.5px; color: var(--muted); }
+  .loja .inv { font-size: 11.5px; color: var(--bad); font-weight: 600; }
+  .loja[aria-pressed="true"] { border-color: var(--azul); background: var(--info-bg); box-shadow: inset 0 -3px 0 var(--amarelo); }
 
   .barra { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
   .abas { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -76,8 +84,7 @@
   .aba[aria-selected="true"] { background: var(--azul); border-color: var(--azul); color: #fff; }
   .aba .n { opacity: .75; font-weight: 600; margin-left: 4px; }
   .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; align-items: center; }
-  .filtros input, .filtros select { width: auto; }
-  .filtros input[type="search"] { width: 200px; max-width: 100%; }
+  .filtros input[type="search"] { width: 220px; max-width: 100%; }
   .chk { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--muted); }
   .chk input { width: auto; }
   .acoes { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -89,8 +96,12 @@
   td.num, th.num { text-align: right; }
   td.desc { white-space: normal; min-width: 220px; }
   tr.pedir td { background: color-mix(in srgb, var(--amarelo) 7%, transparent); }
+  tr.inventario td { background: color-mix(in srgb, var(--bad) 6%, transparent); }
   td input.qtd { width: 76px; text-align: right; padding: 4px 6px; font-weight: 700; }
   td input.qtd.editado { border-color: var(--amarelo); }
+  td input.cx { width: 70px; text-align: right; padding: 4px 6px; }
+  td select.tipo { width: auto; padding: 4px 6px; }
+  .cxs { display: block; font-size: 11px; color: var(--muted); }
   .fraco { color: var(--muted); }
   .vazio { padding: 28px; text-align: center; color: var(--muted); }
 
@@ -99,7 +110,7 @@
   .c-ok { background: var(--ok-bg); color: var(--ok); }
   .c-excesso { background: var(--surface-2); color: var(--muted); border: 1px solid var(--borda); }
   .c-alerta { background: var(--warn-bg); color: var(--warn); }
-  .c-sem { background: var(--bad-bg); color: var(--bad); }
+  .c-sem, .c-inventario { background: var(--bad-bg); color: var(--bad); }
 
   .nota { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
   .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--azul-dark); color: #fff; padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; max-width: calc(100% - 32px); }
@@ -113,7 +124,7 @@
     <span class="marca">ROTA <b>Distribuidora</b></span>
     <span class="sep" aria-hidden="true"></span>
     <span class="sub">Pedido de compra semanal</span>
-    <span class="ciclo">Ciclo: pedido 1× por semana · entrega em até 48 h</span>
+    <span class="ciclo">Pedido loja a loja · 1× por semana · entrega em até 48 h</span>
   </div>
 </header>
 
@@ -138,13 +149,11 @@
           <input id="pCobertura" type="number" min="1" max="90" value="20"/></label>
         <label class="campo" for="pEntrega">Prazo de entrega (dias)
           <input id="pEntrega" type="number" min="0" max="15" value="2"/></label>
-        <label class="campo" for="pMultiplo">Arredondar para múltiplo de
-          <input id="pMultiplo" type="number" min="1" max="120" value="1"/></label>
       </div>
       <div class="formula">
-        Venda/dia = <code>Estoque ÷ DDV</code> ·
-        Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima.
-        Estoque negativo conta como zero.
+        <span>Venda/dia = <code>Estoque ÷ DDV</code></span>
+        <span>Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima na unidade (fracionado) ou na caixa fechada.</span>
+        <span>Estoque negativo bloqueia o item até o cliente fazer inventário.</span>
       </div>
     </div>
   </section>
@@ -152,27 +161,41 @@
   <section class="kpis" id="kpis" aria-label="Resumo do pedido"></section>
 
   <section class="painel">
+    <h2>Lojas</h2>
+    <div class="lojas" id="lojas"></div>
+
     <div class="barra">
       <div class="abas" role="tablist">
-        <button class="aba" role="tab" id="abaLoja" aria-selected="true" data-aba="loja">Pedido por loja<span class="n" id="nLoja"></span></button>
-        <button class="aba" role="tab" id="abaCons" aria-selected="false" data-aba="cons">Consolidado por produto<span class="n" id="nCons"></span></button>
-        <button class="aba" role="tab" id="abaAlerta" aria-selected="false" data-aba="alerta">Revisar<span class="n" id="nAlerta"></span></button>
+        <button class="aba" role="tab" aria-selected="true" data-aba="loja">Pedido da loja<span class="n" id="nLoja"></span></button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="cons">Total por produto<span class="n" id="nCons"></span></button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="alerta">Revisar<span class="n" id="nAlerta"></span></button>
+        <button class="aba" role="tab" aria-selected="false" data-aba="emb">Embalagens<span class="n" id="nEmb"></span></button>
       </div>
       <div class="filtros">
-        <select id="fLoja" aria-label="Filtrar loja"><option value="">Todas as lojas</option></select>
         <input type="search" id="fBusca" placeholder="Buscar produto, código ou EAN" aria-label="Buscar produto"/>
-        <label class="chk" for="fSoPedido"><input type="checkbox" id="fSoPedido" checked/> Só itens com pedido</label>
+        <label class="chk" for="fSoPedido" id="lblSoPedido"><input type="checkbox" id="fSoPedido" checked/> Só itens com pedido</label>
+        <label class="chk" for="fSemCad" id="lblSemCad" hidden><input type="checkbox" id="fSemCad"/> Só sem cadastro</label>
       </div>
     </div>
     <div class="tabela-wrap"><table id="tabela"></table></div>
-    <div class="barra" style="margin: 12px 0 0;">
+
+    <div class="barra" style="margin: 12px 0 0;" id="acoesPedido">
       <div class="acoes">
         <button class="btn" id="btnExportar">Baixar pedido (.xlsx)</button>
         <button class="btn sec" id="btnCopiar">Copiar tabela</button>
         <button class="btn sec" id="btnLimpar">Desfazer ajustes manuais</button>
       </div>
     </div>
-    <p class="nota">A quantidade de cada linha pode ser editada; o ajuste manual fica destacado e entra no arquivo exportado. "Copiar tabela" cola direto no Excel.</p>
+    <div class="barra" style="margin: 12px 0 0;" id="acoesEmb" hidden>
+      <div class="acoes">
+        <label class="btn" for="arqEmb">Importar cadastro de embalagens</label>
+        <input type="file" id="arqEmb" accept=".xls,.xlsx,.csv" hidden/>
+        <button class="btn sec" id="btnExpEmb">Baixar cadastro (.xlsx)</button>
+        <button class="btn sec" id="btnCopEmb">Copiar cadastro</button>
+      </div>
+    </div>
+    <p class="nota" id="notaPedido">Com uma loja selecionada, o arquivo sai só com o pedido dela. Com "Todas", sai uma aba por loja, mais o resumo e a lista de inventário pendente. A quantidade pode ser editada na linha; em produto de caixa fechada ela é arredondada para a caixa.</p>
+    <p class="nota" id="notaEmb" hidden>Produto sem cadastro é pedido em unidades (fracionado). Marque "Caixa fechada" e informe quantas unidades vêm na caixa. A planilha importada precisa das colunas EAN ou Código, Tipo (Caixa ou Fracionado) e Unidades por caixa. O cadastro fica salvo neste navegador.</p>
   </section>
 </main>
 <div class="toast" id="toast" hidden></div>
@@ -184,13 +207,19 @@ const $ = s => document.querySelector(s);
 const fmtN = (n, d = 0) => (n ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtR = n => (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const curta = loja => loja.split(' - ')[0];
 
-let linhas = [];            // dados brutos normalizados
-let ajustes = {};           // chave loja|codigo → quantidade manual
+let linhas = [];            // dados normalizados da planilha
+let ajustes = {};           // loja|codigo → quantidade manual
+let emb = {};               // chave do produto → { tipo: 'cx' | 'un', qtd }
 let aba = 'loja';
-let nomeArquivo = '';
+let lojaSel = '';           // '' = todas
 
-/* ---------- leitura da planilha ---------- */
+try { emb = JSON.parse(localStorage.getItem('rota.embalagens') || '{}') || {}; } catch { emb = {}; }
+function salvarEmb() { try { localStorage.setItem('rota.embalagens', JSON.stringify(emb)); } catch {} }
+const chaveProd = l => l.ean ? 'e:' + l.ean : 'c:' + l.codigo;
+
+/* ---------- leitura de planilhas ---------- */
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const COLS = {
   loja: ['loja', 'filial'],
@@ -211,12 +240,16 @@ function numero(v) {
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
+async function lerPlanilha(f) {
+  if (typeof XLSX === 'undefined') throw new Error('A biblioteca de leitura de planilhas não carregou. Verifique a conexão e recarregue a página.');
+  const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+}
+function indices(h, mapa) { const idx = {}; for (const [k, alts] of Object.entries(mapa)) idx[k] = h.findIndex(x => alts.includes(x)); return idx; }
 function lerMatriz(m) {
   const hi = m.slice(0, 15).findIndex(r => { const h = r.map(norm); return h.includes('estoque') && h.includes('ddv'); });
   if (hi < 0) throw new Error('Não encontrei as colunas "Estoque" e "DDV" nas primeiras linhas da planilha.');
-  const h = m[hi].map(norm);
-  const idx = {};
-  for (const [k, alts] of Object.entries(COLS)) idx[k] = h.findIndex(x => alts.includes(x));
+  const idx = indices(m[hi].map(norm), COLS);
   const faltam = ['codigo', 'descricao', 'estoque', 'ddv'].filter(k => idx[k] < 0);
   if (faltam.length) throw new Error('Colunas obrigatórias ausentes: ' + faltam.join(', '));
   const g = (r, k) => idx[k] >= 0 ? r[idx[k]] : '';
@@ -228,56 +261,67 @@ function lerMatriz(m) {
 }
 function carregar(dados, nome, amostra = false) {
   linhas = dados.map(r => ({ loja: r[0], codigo: r[1], descricao: r[2], ean: r[3], estoque: r[4], ddv: r[5], entrada: r[6], custo: r[7], preco: r[8] }));
-  linhas.forEach(l => l.chave = l.loja + '|' + l.codigo);
-  ajustes = {};
-  nomeArquivo = nome;
+  linhas.forEach(l => { l.chave = l.loja + '|' + l.codigo; l.prod = chaveProd(l); });
+  ajustes = {}; lojaSel = '';
   $('#avisoAmostra').hidden = !amostra;
-  const lojas = [...new Set(linhas.map(l => l.loja))].sort();
-  $('#fLoja').innerHTML = '<option value="">Todas as lojas</option>' + lojas.map(l => `<option>${esc(l)}</option>`).join('');
-  $('#infoArquivo').textContent = `${nome} · ${fmtN(linhas.length)} linhas · ${lojas.length} lojas · ${fmtN(new Set(linhas.map(l => l.codigo)).size)} produtos`;
+  const lojas = new Set(linhas.map(l => l.loja));
+  $('#infoArquivo').textContent = `${nome} · ${fmtN(linhas.length)} linhas · ${lojas.size} lojas · ${fmtN(new Set(linhas.map(l => l.prod)).size)} produtos`;
   calcular();
 }
-async function lerArquivo(f) {
+async function importarEmb(f) {
   try {
-    if (typeof XLSX === 'undefined') throw new Error('A biblioteca de leitura de planilhas não carregou. Verifique a conexão e recarregue a página.');
-    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', raw: false, cellDates: false });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const m = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
-    carregar(lerMatriz(m), f.name);
-    toast('Planilha carregada');
-  } catch (e) { toast(e.message || 'Não foi possível ler o arquivo.'); }
+    const m = await lerPlanilha(f);
+    const MAPA = { ean: COLS.ean, codigo: COLS.codigo, tipo: ['tipo', 'venda', 'formadevenda', 'unidadedevenda'], qtd: ['unidadesporcaixa', 'qtdporcaixa', 'embalagem', 'qtdcaixa', 'caixa', 'multiplo'] };
+    const hi = m.slice(0, 15).findIndex(r => { const i = indices(r.map(norm), MAPA); return (i.ean >= 0 || i.codigo >= 0) && (i.tipo >= 0 || i.qtd >= 0); });
+    if (hi < 0) throw new Error('A planilha de embalagens precisa das colunas EAN ou Código, e Tipo ou Unidades por caixa.');
+    const idx = indices(m[hi].map(norm), MAPA);
+    const porCodigo = new Map(linhas.map(l => [l.codigo, l.prod]));
+    let n = 0;
+    for (const r of m.slice(hi + 1)) {
+      const ean = idx.ean >= 0 ? String(r[idx.ean]).trim() : '', cod = idx.codigo >= 0 ? String(r[idx.codigo]).trim() : '';
+      const k = ean ? 'e:' + ean : (porCodigo.get(cod) || (cod ? 'c:' + cod : ''));
+      if (!k) continue;
+      const qtd = Math.max(1, Math.round(numero(idx.qtd >= 0 ? r[idx.qtd] : 1)));
+      const t = idx.tipo >= 0 ? norm(r[idx.tipo]) : '';
+      const tipo = t.startsWith('c') ? 'cx' : t.startsWith('f') || t.startsWith('u') ? 'un' : qtd > 1 ? 'cx' : 'un';
+      emb[k] = { tipo, qtd }; n++;
+    }
+    salvarEmb(); calcular(); toast(`${n} embalagens importadas`);
+  } catch (e) { toast(e.message || 'Não foi possível ler o cadastro.'); }
 }
 
 /* ---------- cálculo ---------- */
 function param(id, min, def) { const v = parseFloat($(id).value); return isNaN(v) || v < min ? def : v; }
+function caixaDe(l) { const e = emb[l.prod]; return e && e.tipo === 'cx' && e.qtd > 1 ? e.qtd : 1; }
 function calcular() {
-  const cob = param('#pCobertura', 1, 20), ent = param('#pEntrega', 0, 2), mult = Math.max(1, Math.round(param('#pMultiplo', 1, 1)));
+  const cob = param('#pCobertura', 1, 20), ent = param('#pEntrega', 0, 2);
   $('#fCob').textContent = cob; $('#fEnt').textContent = ent;
   for (const l of linhas) {
     const est = l.estoque, ddv = l.ddv;
-    l.estUtil = Math.max(0, est);
     l.alertas = [];
-    if (ddv !== 0 && Math.sign(est) === Math.sign(ddv)) {
-      l.venda = est / ddv;               // DDV = estoque ÷ venda média diária
-    } else if (est > 0 && ddv === 0) {
-      l.venda = est;                     // DDV < 1 dia arredondado para 0: giro alto, estimativa mínima
-      l.alertas.push('Giro alto: DDV zerado com estoque, venda estimada no mínimo');
-    } else {
-      l.venda = null;                    // sem estoque e sem DDV: não dá para saber o giro
-    }
-    if (est < 0) l.alertas.push('Estoque negativo no sistema, considerado zero');
-    if (l.venda === null) {
+    l.caixa = caixaDe(l);
+    l.cadastro = l.prod in emb;
+    if (ddv !== 0 && Math.sign(est) === Math.sign(ddv)) l.venda = est / ddv;          // DDV = estoque ÷ venda média diária
+    else if (est > 0 && ddv === 0) { l.venda = est; l.alertas.push('Giro alto: DDV zerado com estoque, venda estimada no mínimo'); }
+    else l.venda = null;                                                               // sem estoque e sem DDV: giro desconhecido
+
+    if (est < 0) {
+      l.situacao = 'inventario'; l.sugestao = 0;
+      l.alertas.unshift(`Estoque negativo (${fmtN(est)}): fazer inventário antes de pedir`);
+    } else if (l.venda === null) {
       l.situacao = 'sem'; l.sugestao = 0;
       l.alertas.push('Sem giro calculável (estoque e DDV zerados): definir quantidade manualmente');
     } else {
-      const nec = l.venda * (cob + ent) - l.estUtil;
-      l.sugestao = nec > 0 ? Math.ceil(nec / mult) * mult : 0;
-      const cobAtual = l.venda > 0 ? l.estUtil / l.venda : Infinity;
+      const nec = l.venda * (cob + ent) - est;
+      l.sugestao = nec > 0 ? Math.ceil(nec / l.caixa) * l.caixa : 0;
+      const cobAtual = l.venda > 0 ? est / l.venda : Infinity;
       l.situacao = l.sugestao > 0 ? 'pedir' : cobAtual > 90 ? 'excesso' : 'ok';
     }
-    l.ajustado = l.chave in ajustes;
-    l.qtd = l.ajustado ? ajustes[l.chave] : l.sugestao;
+    l.ajustado = l.chave in ajustes && l.situacao !== 'inventario';
+    l.qtd = l.ajustado ? Math.ceil(ajustes[l.chave] / l.caixa) * l.caixa : l.sugestao;
     l.total = l.qtd * l.custo;
+    l.cobPos = l.venda > 0 ? (Math.max(0, est) + l.qtd) / l.venda : null;
+    if (l.qtd > 0 && l.caixa > 1 && l.cobPos > (cob + ent) * 2) l.alertas.push(`Caixa fechada eleva a cobertura para ${fmtN(l.cobPos)} dias`);
   }
   render();
 }
@@ -286,96 +330,134 @@ function calcular() {
 const CHIPS = {
   pedir: '<span class="chip c-pedir">Pedir</span>', ok: '<span class="chip c-ok">Coberto</span>',
   excesso: '<span class="chip c-excesso">Excesso</span>', sem: '<span class="chip c-sem">Sem giro</span>',
+  inventario: '<span class="chip c-inventario">Inventário</span>',
 };
+const daLoja = l => !lojaSel || l.loja === lojaSel;
+function busca(l) { const q = norm($('#fBusca').value); return !q || norm(l.descricao + l.codigo + l.ean).includes(q); }
 function filtradas() {
-  const loja = $('#fLoja').value, q = norm($('#fBusca').value), so = $('#fSoPedido').checked;
-  return linhas.filter(l => (!loja || l.loja === loja)
-    && (!q || norm(l.descricao + l.codigo + l.ean).includes(q))
-    && (aba === 'alerta' ? l.alertas.length > 0 : !so || l.qtd > 0));
+  const so = $('#fSoPedido').checked;
+  return linhas.filter(l => daLoja(l) && busca(l) && (aba === 'alerta' ? l.alertas.length > 0 : !so || l.qtd > 0));
 }
 function consolidar(ls) {
   const m = new Map();
   for (const l of ls) {
-    let c = m.get(l.codigo);
-    if (!c) m.set(l.codigo, c = { codigo: l.codigo, descricao: l.descricao, ean: l.ean, estoque: 0, venda: 0, qtd: 0, total: 0, lojas: 0, custo: l.custo });
-    c.estoque += l.estUtil; c.venda += l.venda || 0; c.qtd += l.qtd; c.total += l.total; if (l.qtd > 0) c.lojas++;
+    let c = m.get(l.prod);
+    if (!c) m.set(l.prod, c = { prod: l.prod, codigo: l.codigo, descricao: l.descricao, ean: l.ean, caixa: l.caixa, cadastro: l.cadastro, estoque: 0, venda: 0, qtd: 0, total: 0, lojas: 0, custo: l.custo, linhas: 0 });
+    c.estoque += Math.max(0, l.estoque); c.venda += l.venda || 0; c.qtd += l.qtd; c.total += l.total; c.linhas++; if (l.qtd > 0) c.lojas++;
   }
   return [...m.values()].sort((a, b) => b.total - a.total || a.descricao.localeCompare(b.descricao));
 }
+const descEmb = caixa => caixa > 1 ? `CX ${caixa}` : 'UN';
 function render() {
-  const loja = $('#fLoja').value;
-  const base = linhas.filter(l => !loja || l.loja === loja);
+  const base = linhas.filter(daLoja);
   const comPedido = base.filter(l => l.qtd > 0);
-  const unid = comPedido.reduce((s, l) => s + l.qtd, 0), valor = comPedido.reduce((s, l) => s + l.total, 0);
-  const sem = base.filter(l => l.situacao === 'sem').length, alerta = base.filter(l => l.alertas.length).length;
-  const prodPedido = new Set(comPedido.map(l => l.codigo)).size;
+  const valor = comPedido.reduce((s, l) => s + l.total, 0);
+  const inv = base.filter(l => l.situacao === 'inventario').length;
+  const prods = consolidar(linhas), semCad = prods.filter(p => !p.cadastro).length;
   $('#kpis').innerHTML = [
-    ['Valor do pedido (custo c/ impostos)', fmtR(valor), 'destaque'],
-    ['Unidades a pedir', fmtN(unid)],
-    ['Produtos no pedido', fmtN(prodPedido)],
-    ['Linhas loja × produto', fmtN(comPedido.length) + ' de ' + fmtN(base.length)],
-    ['Sem giro calculável', fmtN(sem)],
+    [lojaSel ? `Pedido ${curta(lojaSel)} (custo c/ impostos)` : 'Pedido das lojas (custo c/ impostos)', fmtR(valor), 'destaque'],
+    ['Unidades a pedir', fmtN(comPedido.reduce((s, l) => s + l.qtd, 0))],
+    ['Itens no pedido', fmtN(comPedido.length)],
+    ['Bloqueados para inventário', fmtN(inv), inv ? 'alerta' : ''],
+    ['Produtos sem cadastro de embalagem', fmtN(semCad) + ' de ' + fmtN(prods.length)],
   ].map(([l, v, c]) => `<div class="kpi ${c || ''}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
 
+  const lojas = [...new Set(linhas.map(l => l.loja))].sort();
+  $('#lojas').innerHTML = !lojas.length ? '' : [['', 'Todas', linhas], ...lojas.map(lj => [lj, curta(lj), linhas.filter(l => l.loja === lj)])].map(([k, nome, ls]) => {
+    const p = ls.filter(l => l.qtd > 0), i = ls.filter(l => l.situacao === 'inventario').length;
+    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome">${esc(nome)}</span><span class="val">${fmtR(p.reduce((s, l) => s + l.total, 0))}</span><span class="det">${fmtN(p.length)} itens</span>${i ? `<span class="inv">${i} para inventário</span>` : ''}</button>`;
+  }).join('');
+
   $('#nLoja').textContent = fmtN(comPedido.length);
-  $('#nCons').textContent = fmtN(prodPedido);
-  $('#nAlerta').textContent = fmtN(alerta);
-  $('#fSoPedido').closest('label').hidden = aba === 'alerta';
+  $('#nCons').textContent = fmtN(new Set(comPedido.map(l => l.prod)).size);
+  $('#nAlerta').textContent = fmtN(base.filter(l => l.alertas.length).length);
+  $('#nEmb').textContent = semCad ? `${fmtN(semCad)} sem cadastro` : '';
+  $('#lblSoPedido').hidden = aba === 'alerta' || aba === 'emb';
+  $('#lblSemCad').hidden = aba !== 'emb';
+  $('#acoesPedido').hidden = $('#notaPedido').hidden = aba === 'emb';
+  $('#acoesEmb').hidden = $('#notaEmb').hidden = aba !== 'emb';
+  $('.abas').querySelector('[data-aba="loja"]').firstChild.textContent = lojaSel ? `Pedido ${curta(lojaSel)}` : 'Pedido por loja';
 
   const t = $('#tabela');
   if (!linhas.length) { t.innerHTML = '<tr><td class="vazio">Anexe a planilha DDV da semana para gerar o pedido.</td></tr>'; return; }
+
+  if (aba === 'emb') {
+    const so = $('#fSemCad').checked;
+    const cs = prods.filter(p => busca(p) && (!so || !p.cadastro)).sort((a, b) => a.descricao.localeCompare(b.descricao));
+    t.innerHTML = `<thead><tr><th>Código</th><th>EAN</th><th>Descrição</th><th>Venda</th><th class="num">Unidades por caixa</th><th class="num">Lojas com pedido</th><th>Cadastro</th></tr></thead><tbody>`
+      + (cs.length ? cs.map(c => { const e = emb[c.prod] || { tipo: 'un', qtd: 1 }; return `<tr>
+        <td>${esc(c.codigo)}</td><td class="fraco">${esc(c.ean)}</td><td class="desc">${esc(c.descricao)}</td>
+        <td><select class="tipo" data-p="${esc(c.prod)}" aria-label="Forma de venda ${esc(c.descricao)}"><option value="un"${e.tipo === 'un' ? ' selected' : ''}>Fracionado (unidade)</option><option value="cx"${e.tipo === 'cx' ? ' selected' : ''}>Caixa fechada</option></select></td>
+        <td class="num"><input class="cx" type="number" min="1" step="1" value="${e.qtd}" data-p="${esc(c.prod)}" ${e.tipo === 'cx' ? '' : 'disabled'} aria-label="Unidades por caixa ${esc(c.descricao)}"/></td>
+        <td class="num">${c.lojas}</td>
+        <td>${c.cadastro ? '<span class="chip c-ok">Cadastrado</span>' : '<span class="chip c-alerta">Sem cadastro</span>'}</td></tr>`; }).join('')
+        : '<tr><td colspan="7" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
+    return;
+  }
+
   const ls = filtradas();
   if (aba === 'cons') {
     const cs = consolidar(ls);
-    t.innerHTML = `<thead><tr><th>Código</th><th>Descrição</th><th>EAN</th><th class="num">Lojas</th><th class="num">Estoque total</th><th class="num">Venda/dia total</th><th class="num">Pedido (un.)</th><th class="num">Custo un.</th><th class="num">Total</th></tr></thead><tbody>`
-      + (cs.length ? cs.map(c => `<tr class="${c.qtd > 0 ? 'pedir' : ''}"><td>${esc(c.codigo)}</td><td class="desc">${esc(c.descricao)}</td><td class="fraco">${esc(c.ean)}</td><td class="num">${c.lojas}</td><td class="num">${fmtN(c.estoque)}</td><td class="num">${fmtN(c.venda, 2)}</td><td class="num"><strong>${fmtN(c.qtd)}</strong></td><td class="num">${fmtR(c.custo)}</td><td class="num">${fmtR(c.total)}</td></tr>`).join('')
-        : '<tr><td colspan="9" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
+    t.innerHTML = `<thead><tr><th>Código</th><th>Descrição</th><th>EAN</th><th>Emb.</th><th class="num">Lojas</th><th class="num">Estoque total</th><th class="num">Venda/dia total</th><th class="num">Pedido (un.)</th><th class="num">Custo un.</th><th class="num">Total</th></tr></thead><tbody>`
+      + (cs.length ? cs.map(c => `<tr class="${c.qtd > 0 ? 'pedir' : ''}"><td>${esc(c.codigo)}</td><td class="desc">${esc(c.descricao)}</td><td class="fraco">${esc(c.ean)}</td><td>${descEmb(c.caixa)}</td><td class="num">${c.lojas}</td><td class="num">${fmtN(c.estoque)}</td><td class="num">${fmtN(c.venda, 2)}</td><td class="num"><strong>${fmtN(c.qtd)}</strong>${c.caixa > 1 ? `<span class="cxs">${fmtN(c.qtd / c.caixa)} cx</span>` : ''}</td><td class="num">${fmtR(c.custo)}</td><td class="num">${fmtR(c.total)}</td></tr>`).join('')
+        : '<tr><td colspan="10" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
     return;
   }
-  const lim = 1500, vis = ls.slice(0, lim);
-  t.innerHTML = `<thead><tr><th>Loja</th><th>Código</th><th>Descrição</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${aba === 'alerta' ? '<th>Motivo</th>' : '<th>Últ. entrada</th>'}</tr></thead><tbody>`
-    + (vis.length ? vis.map(l => `<tr class="${l.qtd > 0 ? 'pedir' : ''}">
-      <td>${esc(l.loja.split(' - ')[0])}</td><td>${esc(l.codigo)}</td><td class="desc">${esc(l.descricao)}</td>
+  const lim = 1500, vis = ls.slice(0, lim), alerta = aba === 'alerta';
+  t.innerHTML = `<thead><tr><th>Loja</th><th>Código</th><th>Descrição</th><th>Emb.</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${alerta ? '<th>Motivo</th>' : '<th>Últ. entrada</th>'}</tr></thead><tbody>`
+    + (vis.length ? vis.map(l => `<tr class="${l.situacao === 'inventario' ? 'inventario' : l.qtd > 0 ? 'pedir' : ''}">
+      <td>${esc(curta(l.loja))}</td><td>${esc(l.codigo)}</td><td class="desc">${esc(l.descricao)}</td>
+      <td>${descEmb(l.caixa)}</td>
       <td class="num">${fmtN(l.estoque)}</td><td class="num">${fmtN(l.ddv)}</td>
       <td class="num">${l.venda === null ? '<span class="fraco">—</span>' : fmtN(l.venda, 2)}</td>
       <td class="num fraco">${fmtN(l.sugestao)}</td>
-      <td class="num"><input class="qtd${l.ajustado ? ' editado' : ''}" type="number" min="0" step="1" value="${l.qtd}" data-k="${esc(l.chave)}" aria-label="Pedido ${esc(l.descricao)}"/></td>
+      <td class="num">${l.situacao === 'inventario' ? '<span class="fraco">bloqueado</span>' : `<input class="qtd${l.ajustado ? ' editado' : ''}" type="number" min="0" step="${l.caixa}" value="${l.qtd}" data-k="${esc(l.chave)}" aria-label="Pedido ${esc(l.descricao)}"/>${l.caixa > 1 && l.qtd ? `<span class="cxs">${fmtN(l.qtd / l.caixa)} cx</span>` : ''}`}</td>
+      <td class="num">${l.cobPos === null ? '<span class="fraco">—</span>' : fmtN(l.cobPos) + ' d'}</td>
       <td class="num">${fmtR(l.custo)}</td><td class="num">${fmtR(l.total)}</td>
-      <td>${CHIPS[l.situacao]}${l.alertas.length && l.situacao !== 'sem' ? ' <span class="chip c-alerta">Revisar</span>' : ''}</td>
-      <td class="${aba === 'alerta' ? '' : 'fraco'}">${aba === 'alerta' ? esc(l.alertas.join(' · ')) : esc(l.entrada)}</td></tr>`).join('')
-      : `<tr><td colspan="12" class="vazio">Nenhuma linha com esse filtro.</td></tr>`)
-    + (ls.length > lim ? `<tr><td colspan="12" class="vazio">Mostrando ${lim} de ${fmtN(ls.length)} linhas. Filtre por loja ou busque um produto para ver o restante.</td></tr>` : '')
+      <td>${CHIPS[l.situacao]}${l.alertas.length && !['sem', 'inventario'].includes(l.situacao) ? ' <span class="chip c-alerta">Revisar</span>' : ''}</td>
+      <td class="${alerta ? '' : 'fraco'}">${alerta ? esc(l.alertas.join(' · ')) : esc(l.entrada)}</td></tr>`).join('')
+      : `<tr><td colspan="14" class="vazio">Nenhuma linha com esse filtro.</td></tr>`)
+    + (ls.length > lim ? `<tr><td colspan="14" class="vazio">Mostrando ${lim} de ${fmtN(ls.length)} linhas. Escolha uma loja ou busque um produto para ver o restante.</td></tr>` : '')
     + '</tbody>';
 }
 
 /* ---------- exportação ---------- */
-function linhasPedido(lsAll) {
-  return lsAll.filter(l => l.qtd > 0).sort((a, b) => a.loja.localeCompare(b.loja) || a.descricao.localeCompare(b.descricao))
-    .map(l => ({ Loja: l.loja, 'Código': l.codigo, 'Descrição': l.descricao, 'Código de Barras': l.ean, 'Estoque': l.estoque, 'DDV': l.ddv,
-      'Venda/dia': l.venda === null ? '' : +l.venda.toFixed(2), 'Sugestão': l.sugestao, 'Pedido': l.qtd, 'Custo un.': l.custo, 'Total': +l.total.toFixed(2),
-      'Ajuste manual': l.ajustado ? 'Sim' : '' }));
+const nomeAba = s => s.replace(/[\\/?*[\]:]/g, '').slice(0, 31);
+const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function linhasPedido(ls) {
+  return ls.filter(l => l.qtd > 0).sort((a, b) => a.descricao.localeCompare(b.descricao)).map(l => ({
+    Loja: l.loja, 'Código': l.codigo, 'Descrição': l.descricao, 'Código de Barras': l.ean, 'Embalagem': descEmb(l.caixa),
+    'Pedido (un.)': l.qtd, 'Caixas': l.caixa > 1 ? l.qtd / l.caixa : '', 'Custo un.': l.custo, 'Total': +l.total.toFixed(2),
+    'Estoque': l.estoque, 'DDV': l.ddv, 'Venda/dia': l.venda === null ? '' : +l.venda.toFixed(2), 'Sugestão': l.sugestao, 'Ajuste manual': l.ajustado ? 'Sim' : '' }));
+}
+function baixar(wb, nome) {
+  try { XLSX.writeFile(wb, nome); toast('Arquivo gerado: ' + nome); }
+  catch { toast('O download foi bloqueado neste visualizador. Use o botão de copiar e cole no Excel.'); }
 }
 function exportar() {
-  const loja = $('#fLoja').value, base = linhas.filter(l => !loja || l.loja === loja);
+  const base = linhas.filter(daLoja);
   if (!base.some(l => l.qtd > 0)) return toast('Não há itens com pedido para exportar.');
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(consolidar(base).filter(c => c.qtd > 0).map(c => ({
-    'Código': c.codigo, 'Descrição': c.descricao, 'Código de Barras': c.ean, 'Lojas': c.lojas, 'Pedido (un.)': c.qtd, 'Custo un.': c.custo, 'Total': +c.total.toFixed(2) }))), 'Consolidado');
   const lojas = [...new Set(base.map(l => l.loja))].sort();
+  if (!lojaSel) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(lojas.map(lj => {
+    const ls = base.filter(l => l.loja === lj), p = ls.filter(l => l.qtd > 0);
+    return { Loja: lj, Itens: p.length, 'Unidades': p.reduce((s, l) => s + l.qtd, 0), 'Total': +p.reduce((s, l) => s + l.total, 0).toFixed(2), 'Bloqueados p/ inventário': ls.filter(l => l.situacao === 'inventario').length };
+  })), 'Resumo');
   for (const lj of lojas) {
     const rows = linhasPedido(base.filter(l => l.loja === lj));
-    if (rows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), lj.split(' - ')[0].replace(/[\\/?*[\]:]/g, '').slice(0, 31));
+    if (rows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), nomeAba(curta(lj)));
   }
-  const d = new Date(), nome = `Pedido_Rota_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.xlsx`;
-  try { XLSX.writeFile(wb, nome); toast('Arquivo gerado: ' + nome); }
-  catch { toast('O download foi bloqueado neste visualizador. Use "Copiar tabela" e cole no Excel.'); }
+  const inv = base.filter(l => l.situacao === 'inventario').map(l => ({ Loja: l.loja, 'Código': l.codigo, 'Descrição': l.descricao, 'Código de Barras': l.ean, 'Estoque no sistema': l.estoque, 'Última entrada': l.entrada }));
+  if (inv.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inv), 'Inventário pendente');
+  baixar(wb, `Pedido_Rota_${lojaSel ? nomeAba(curta(lojaSel)).replace(/\s+/g, '') + '_' : ''}${hoje()}.xlsx`);
 }
-async function copiar() {
-  const ls = filtradas();
-  let rows;
-  if (aba === 'cons') rows = [['Código', 'Descrição', 'EAN', 'Lojas', 'Pedido', 'Custo un.', 'Total'], ...consolidar(ls).map(c => [c.codigo, c.descricao, c.ean, c.lojas, c.qtd, fmtN(c.custo, 2), fmtN(c.total, 2)])];
-  else rows = [['Loja', 'Código', 'Descrição', 'EAN', 'Estoque', 'DDV', 'Venda/dia', 'Sugestão', 'Pedido', 'Custo un.', 'Total'],
-    ...ls.map(l => [l.loja, l.codigo, l.descricao, l.ean, l.estoque, l.ddv, l.venda === null ? '' : fmtN(l.venda, 2), l.sugestao, l.qtd, fmtN(l.custo, 2), fmtN(l.total, 2)])];
+function tabelaEmb() {
+  return consolidar(linhas).sort((a, b) => a.descricao.localeCompare(b.descricao)).map(c => {
+    const e = emb[c.prod];
+    return { 'Código': c.codigo, 'EAN': c.ean, 'Descrição': c.descricao, 'Tipo': !e ? '' : e.tipo === 'cx' ? 'Caixa' : 'Fracionado', 'Unidades por caixa': e && e.tipo === 'cx' ? e.qtd : '' };
+  });
+}
+async function copiarTsv(rows) {
   const tsv = rows.map(r => r.join('\t')).join('\n');
   try { await navigator.clipboard.writeText(tsv); toast(`${rows.length - 1} linhas copiadas. Cole no Excel.`); }
   catch {
@@ -384,32 +466,52 @@ async function copiar() {
     ta.remove();
   }
 }
+function copiar() {
+  const ls = filtradas();
+  if (aba === 'cons') return copiarTsv([['Código', 'Descrição', 'EAN', 'Embalagem', 'Lojas', 'Pedido (un.)', 'Custo un.', 'Total'], ...consolidar(ls).map(c => [c.codigo, c.descricao, c.ean, descEmb(c.caixa), c.lojas, c.qtd, fmtN(c.custo, 2), fmtN(c.total, 2)])]);
+  copiarTsv([['Loja', 'Código', 'Descrição', 'EAN', 'Embalagem', 'Pedido (un.)', 'Caixas', 'Custo un.', 'Total', 'Estoque', 'DDV', 'Venda/dia', 'Situação'],
+    ...ls.map(l => [l.loja, l.codigo, l.descricao, l.ean, descEmb(l.caixa), l.qtd, l.caixa > 1 ? l.qtd / l.caixa : '', fmtN(l.custo, 2), fmtN(l.total, 2), l.estoque, l.ddv, l.venda === null ? '' : fmtN(l.venda, 2), l.situacao])]);
+}
 
 /* ---------- eventos ---------- */
 let tt;
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 3200); }
-$('#arquivo').addEventListener('change', e => e.target.files[0] && lerArquivo(e.target.files[0]));
+async function abrir(f) { try { carregar(lerMatriz(await lerPlanilha(f)), f.name); toast('Planilha carregada'); } catch (e) { toast(e.message || 'Não foi possível ler o arquivo.'); } }
+$('#arquivo').addEventListener('change', e => e.target.files[0] && abrir(e.target.files[0]));
+$('#arqEmb').addEventListener('change', e => { e.target.files[0] && importarEmb(e.target.files[0]); e.target.value = ''; });
 const drop = $('#drop');
 ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => e.dataTransfer.files[0] && lerArquivo(e.dataTransfer.files[0]));
-['#pCobertura', '#pEntrega', '#pMultiplo'].forEach(id => $(id).addEventListener('input', calcular));
-['#fLoja', '#fSoPedido'].forEach(id => $(id).addEventListener('change', render));
+drop.addEventListener('drop', e => e.dataTransfer.files[0] && abrir(e.dataTransfer.files[0]));
+['#pCobertura', '#pEntrega'].forEach(id => $(id).addEventListener('input', calcular));
+['#fSoPedido', '#fSemCad'].forEach(id => $(id).addEventListener('change', render));
 $('#fBusca').addEventListener('input', render);
+$('#lojas').addEventListener('click', e => { const b = e.target.closest('.loja'); if (!b) return; lojaSel = b.dataset.loja; render(); });
 document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => {
   aba = b.dataset.aba;
   document.querySelectorAll('.aba').forEach(x => x.setAttribute('aria-selected', x === b));
   render();
 }));
 $('#tabela').addEventListener('change', e => {
-  if (!e.target.matches('input.qtd')) return;
-  const v = Math.max(0, Math.round(numero(e.target.value)));
-  ajustes[e.target.dataset.k] = v;
-  calcular();
+  const el = e.target;
+  if (el.matches('input.qtd')) { ajustes[el.dataset.k] = Math.max(0, Math.round(numero(el.value))); return calcular(); }
+  if (el.matches('select.tipo')) {
+    const atual = emb[el.dataset.p] || { qtd: 1 };
+    emb[el.dataset.p] = { tipo: el.value, qtd: atual.qtd || 1 };
+  } else if (el.matches('input.cx')) {
+    emb[el.dataset.p] = { tipo: 'cx', qtd: Math.max(1, Math.round(numero(el.value))) };
+  } else return;
+  salvarEmb(); calcular();
 });
 $('#btnExportar').addEventListener('click', exportar);
 $('#btnCopiar').addEventListener('click', copiar);
 $('#btnLimpar').addEventListener('click', () => { ajustes = {}; calcular(); toast('Ajustes manuais desfeitos'); });
+$('#btnExpEmb').addEventListener('click', () => {
+  if (!linhas.length) return toast('Carregue a planilha DDV primeiro.');
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tabelaEmb()), 'Embalagens');
+  baixar(wb, `Cadastro_Embalagens_Rota_${hoje()}.xlsx`);
+});
+$('#btnCopEmb').addEventListener('click', () => { const r = tabelaEmb(); copiarTsv([Object.keys(r[0] || { 'Código': '' }), ...r.map(Object.values)]); });
 
 if (AMOSTRA) carregar(AMOSTRA, 'DDV_ROTA_15062026.xls', true); else render();
 </script>
