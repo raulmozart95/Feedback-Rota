@@ -184,10 +184,10 @@
         <label class="campo" for="pEntrega">Prazo de entrega (dias)
           <input id="pEntrega" type="number" min="0" max="15" value="2"/></label>
       </div>
-      <label class="chk" for="pMultiplo" style="margin-top: 10px;"><input type="checkbox" id="pMultiplo" checked/> Arredondar para o múltiplo de venda da Rota</label>
+      <label class="chk" for="pMultiplo" style="margin-top: 10px;"><input type="checkbox" id="pMultiplo" checked/> Pedir em lotes de meia caixa (respeitando o múltiplo da Rota)</label>
       <div class="formula">
         <span>Venda/dia = <code>Estoque ÷ DDV</code></span>
-        <span>Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima.</span>
+        <span>Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima em lotes de meia caixa.</span>
         <span>Estoque negativo fica sem sugestão, para o comprador definir a quantidade.</span>
         <span>Valor pelo custo do cliente (com ST). Caixas = <code>unidades ÷ fator</code>.</span>
       </div>
@@ -444,7 +444,8 @@ function calcular() {
     l.r = vincular(l.ean);
     l.grupo = l.r?.grupo || SEM_GRUPO;
     l.fator = l.r?.fator || 0;
-    l.mult = usarMult && l.r ? l.r.mult : 1;
+    // lote mínimo = meia caixa, alinhado ao múltiplo de venda da Rota (ex.: fator 12, múltiplo 1 → 6; fator 54, múltiplo 18 → 36)
+    l.mult = usarMult && l.r ? Math.ceil(Math.ceil(l.r.fator / 2) / l.r.mult) * l.r.mult : 1;
     l.codCli = codigos[eanN(l.ean)] || '';
     if (ddv !== 0 && Math.sign(est) === Math.sign(ddv)) l.venda = est / ddv;          // DDV = estoque ÷ venda média diária
     else if (est > 0 && ddv === 0) { l.venda = est; l.alertas.push('Giro alto: DDV zerado com estoque, venda estimada no mínimo'); }
@@ -477,7 +478,7 @@ function calcular() {
     l.precoSemST = l.r ? l.custo / (1 + (l.r.st || 0)) : null;
     l.cobPos = l.venda > 0 && (est >= 0 || l.qtd > 0) ? (Math.max(0, est) + l.qtd) / l.venda : null;
     if (l.qtd > 0 && l.diasSemVenda > 30) l.alertas.push(`Sem venda há ${l.diasSemVenda} dias (última em ${l.ultVenda.slice(0, 10)})`);
-    if (l.qtd > 0 && l.mult > 1 && l.cobPos > (cob + ent) * 2) l.alertas.push(`Múltiplo de ${l.mult} eleva a cobertura para ${fmtN(l.cobPos)} dias`);
+    if (l.qtd > 0 && l.mult > 1 && l.cobPos > (cob + ent) * 2) l.alertas.push(`Lote de ${l.mult} un. eleva a cobertura para ${fmtN(l.cobPos)} dias`);
   }
   const grupos = [...new Set(linhas.map(l => l.grupo))].sort((a, b) => (a === SEM_GRUPO) - (b === SEM_GRUPO) || a.localeCompare(b));
   const sel = $('#fGrupo').value;
@@ -577,7 +578,7 @@ function render() {
     return;
   }
   const lim = 1500, vis = rows.slice(0, lim), mot = ['negativo', 'ruptura', 'sem', 'revisar'].includes($('#fSit').value);
-  t.innerHTML = `<thead><tr><th>Loja</th><th>Código de barras</th><th>Descrição</th><th>Indústria</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido (un.)</th><th class="num">Mult.</th><th class="num">Caixas</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${mot ? '<th>Motivo</th>' : '<th>Últ. venda</th>'}</tr></thead><tbody>`
+  t.innerHTML = `<thead><tr><th>Loja</th><th>Código de barras</th><th>Descrição</th><th>Indústria</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido (un.)</th><th class="num">Lote</th><th class="num">Caixas</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${mot ? '<th>Motivo</th>' : '<th>Últ. venda</th>'}</tr></thead><tbody>`
     + (vis.length ? vis.map(l => `<tr class="${l.situacao === 'negativo' ? 'negativo' : l.qtd > 0 ? 'pedir' : ''}">
       <td>${esc(nomeLoja(l.loja))}</td><td class="fraco">${esc(l.ean)}</td><td class="desc">${esc(l.descricao)}</td>
       <td class="${l.r ? '' : 'fraco'}">${esc(l.r ? l.grupo : '—')}</td>
@@ -585,7 +586,7 @@ function render() {
       <td class="num">${l.venda === null ? '<span class="fraco">—</span>' : fmtN(l.venda, 2)}</td>
       <td class="num fraco">${fmtN(l.sugestao)}</td>
       <td class="num"><input class="qtd${l.ajustado ? ' editado' : ''}" type="number" min="0" step="${l.mult}" value="${l.qtd}" data-k="${esc(l.chave)}" aria-label="Pedido ${esc(l.descricao)}"/></td>
-      <td class="num fraco">${l.r ? l.r.mult : '—'}</td>
+      <td class="num fraco">${l.r ? l.mult : '—'}</td>
       <td class="num">${l.qtd ? fmtCx(l.caixas, l.fator) : '<span class="fraco">—</span>'}</td>
       <td class="num">${l.cobPos === null ? '<span class="fraco">—</span>' : fmtN(l.cobPos) + ' d'}</td>
       <td class="num">${fmtR(l.custo)}</td><td class="num">${fmtR(l.total)}</td>
@@ -665,7 +666,7 @@ function exportarRelatorio() {
     return { Loja: lj, Nome: infoLoja(lj).nome, 'Cliente TOTVS': infoLoja(lj).cliente, 'Loja TOTVS': infoLoja(lj).loja, Itens: p.length, Unidades: soma(p, 'qtd'), Caixas: r2(soma(p, 'caixas')), 'Peso bruto (kg)': r2(soma(p, 'peso')), Total: r2(soma(p, 'total')), 'Estoque negativo': x.filter(l => l.situacao === 'negativo').length, Ruptura: x.filter(l => l.situacao === 'ruptura').length }; }), 'Resumo');
   add(porGrupo(lst).filter(g => g.qtd > 0).map(g => ({ 'Indústria': g.grupo, Itens: g.itens, Lojas: g.lojas.size, Unidades: g.qtd, Caixas: r2(g.caixas), 'Peso bruto (kg)': r2(g.peso), Total: r2(g.total) })), 'Por indústria');
   const det = l => ({ Loja: l.loja, Nome: infoLoja(l.loja).nome, 'Código de Barras': l.ean, 'Cód. São Domingos': l.codCli, 'Cód. Rota': l.r?.codigo || '', 'Descrição': l.descricao, 'Indústria': l.r ? l.grupo : '',
-    Estoque: l.estoque, DDV: l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda), 'Sugestão': l.sugestao, Pedido: l.qtd, 'Múltiplo': l.r?.mult || '', Fator: l.fator || '', Caixas: l.fator ? r2(l.caixas) : '',
+    Estoque: l.estoque, DDV: l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda), 'Sugestão': l.sugestao, Pedido: l.qtd, 'Lote': l.r ? l.mult : '', 'Múltiplo Rota': l.r?.mult || '', Fator: l.fator || '', Caixas: l.fator ? r2(l.caixas) : '',
     'Peso bruto (kg)': l.r ? r2(l.peso) : '', 'Custo c/ ST': l.custo, 'Preço s/ ST': l.precoSemST === null ? '' : r2(l.precoSemST), Total: r2(l.total), 'Última venda': l.ultVenda, 'Ajuste manual': l.ajustado ? 'Sim' : '', Alertas: l.alertas.join(' · ') });
   add(lst.filter(l => l.qtd > 0).map(det), 'Pedido');
   add(lst.filter(l => l.situacao === 'negativo').map(det), 'Estoque negativo');
