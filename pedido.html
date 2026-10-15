@@ -184,7 +184,7 @@
         <label class="campo" for="pEntrega">Prazo de entrega (dias)
           <input id="pEntrega" type="number" min="0" max="15" value="2"/></label>
       </div>
-      <label class="chk" for="pMultiplo" style="margin-top: 10px;"><input type="checkbox" id="pMultiplo" checked/> Pedir em lotes de meia caixa (respeitando o múltiplo da Rota)</label>
+      <label class="chk" for="pMultiplo" style="margin-top: 10px;"><input type="checkbox" id="pMultiplo" checked/> Pedir em lotes de meia caixa</label>
       <div class="formula">
         <span>Venda/dia = <code>Estoque ÷ DDV</code></span>
         <span>Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima em lotes de meia caixa.</span>
@@ -434,6 +434,8 @@ function carregar(dados, nome, amostra = false) {
 
 /* ---------- cálculo ---------- */
 function param(id, min, def) { const v = parseFloat($(id).value); return isNaN(v) || v < min ? def : v; }
+// arredonda para cima em meias caixas inteiras (fator 25 → 13, 25, 38…); sem base, em unidades
+const emLote = (q, l) => q <= 0 ? 0 : l.meia ? Math.ceil(Math.ceil(q / l.meia - 1e-9) * l.meia) : Math.ceil(q);
 function calcular() {
   const cob = param('#pCobertura', 1, 20), ent = param('#pEntrega', 0, 2), usarMult = $('#pMultiplo').checked;
   $('#fCob').textContent = cob; $('#fEnt').textContent = ent;
@@ -444,8 +446,9 @@ function calcular() {
     l.r = vincular(l.ean);
     l.grupo = l.r?.grupo || SEM_GRUPO;
     l.fator = l.r?.fator || 0;
-    // lote mínimo = meia caixa, alinhado ao múltiplo de venda da Rota (ex.: fator 12, múltiplo 1 → 6; fator 54, múltiplo 18 → 36)
-    l.mult = usarMult && l.r ? Math.ceil(Math.ceil(l.r.fator / 2) / l.r.mult) * l.r.mult : 1;
+    // lote mínimo = meia caixa (ex.: fator 12 → 6; fator 36 → 18). O múltiplo da Rota só trava no palm do vendedor, não na importação.
+    l.meia = usarMult && l.r ? l.r.fator / 2 : 0;
+    l.mult = l.meia ? Math.ceil(l.meia) : 1;
     l.codCli = codigos[eanN(l.ean)] || '';
     if (ddv !== 0 && Math.sign(est) === Math.sign(ddv)) l.venda = est / ddv;          // DDV = estoque ÷ venda média diária
     else if (est > 0 && ddv === 0) { l.venda = est; l.alertas.push('Giro alto: DDV zerado com estoque, venda estimada no mínimo'); }
@@ -465,13 +468,13 @@ function calcular() {
       }
     } else {
       const nec = l.venda * (cob + ent) - est;
-      l.sugestao = nec > 0 ? Math.ceil(nec / l.mult) * l.mult : 0;
+      l.sugestao = nec > 0 ? emLote(nec, l) : 0;
       const cobAtual = l.venda > 0 ? est / l.venda : Infinity;
       l.situacao = l.sugestao > 0 ? 'pedir' : cobAtual > 90 ? 'excesso' : 'ok';
     }
     if (l.r?.duplicado) l.alertas.push('Código de barras repetido em mais de um produto na base Rota');
     l.ajustado = l.chave in ajustes;
-    l.qtd = l.ajustado ? Math.ceil(ajustes[l.chave] / l.mult) * l.mult : l.sugestao;
+    l.qtd = l.ajustado ? emLote(ajustes[l.chave], l) : l.sugestao;
     l.total = l.qtd * l.custo;
     l.caixas = l.fator ? l.qtd / l.fator : 0;
     l.peso = l.r ? l.qtd * l.r.peso : 0;
