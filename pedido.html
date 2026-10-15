@@ -133,7 +133,11 @@
   details.cfg { border-top: 1px solid var(--borda); padding-top: 8px; }
   details.cfg summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--accent); }
   .cfg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-  .cfg-lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin-top: 8px; }
+  .cad-lojas { margin-bottom: 14px; }
+  .cad-lojas summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .cad-lojas table { max-width: 720px; }
+  .cad-lojas td input { padding: 4px 6px; }
+  .loja .apelido { font-size: 12px; font-weight: 600; color: var(--muted); }
 
   .nota { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
   .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--sd-azul); color: #fff; padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; max-width: calc(100% - 32px); z-index: 5; }
@@ -199,6 +203,11 @@
   <section class="painel">
     <h2>Lojas</h2>
     <div class="lojas" id="lojas"></div>
+    <details class="cad-lojas">
+      <summary>Cadastro das lojas (nome e código no TOTVS da Rota)</summary>
+      <div class="tabela-wrap"><table id="tabLojas"></table></div>
+      <p class="nota">Os valores padrão vêm do projeto. Uma alteração feita aqui fica salva neste navegador.</p>
+    </details>
 
     <div class="barra">
       <div class="abas" role="tablist">
@@ -242,13 +251,11 @@
         <details class="cfg">
           <summary>Dados do pedido de venda</summary>
           <div class="cfg-grid">
-            <label class="campo" for="cCliente">Código cliente<input id="cCliente" class="cfgIn" data-k="cliente"/></label>
             <label class="campo" for="cCond">Condição de pagamento<input id="cCond" class="cfgIn" data-k="cond"/></label>
             <label class="campo" for="cVend">Código vendedor<input id="cVend" class="cfgIn" data-k="vend"/></label>
             <label class="campo" for="cMsg">Mensagem do pedido<input id="cMsg" class="cfgIn" data-k="msg"/></label>
           </div>
-          <p class="nota">Loja do cliente no TOTVS para cada loja do DDV:</p>
-          <div class="cfg-lojas" id="cfgLojas"></div>
+          <p class="nota">O código de cliente e a loja de cada loja ficam no cadastro das lojas, logo acima da tabela do pedido.</p>
         </details>
       </div>
       <div class="exp">
@@ -291,9 +298,24 @@ const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const CFG_PADRAO = { cliente: '11241', cond: '72', vend: '1549', msg: 'PEDIDO SÃO DOMINGOS', lojas: { '01': '1', '02': '2', '07': '7', '08': '8', '09': '9', '11': '4', '12': '5' } };
-let cfg = { ...CFG_PADRAO, ...store.get('sd.cfg', {}) };
-cfg.lojas = { ...CFG_PADRAO.lojas, ...(store.get('sd.cfg', {}).lojas || {}) };
+// Cadastro das lojas São Domingos: nome de referência e, no TOTVS da Rota, código de cliente + loja.
+// Código de cliente e loja provisórios até a Rota confirmar a correspondência de cada loja.
+const LOJAS_PADRAO = {
+  '01': { nome: 'Petrópolis',   cliente: '11241', loja: '1' },
+  '02': { nome: '',             cliente: '11241', loja: '2' },
+  '07': { nome: '',             cliente: '11241', loja: '7' },
+  '08': { nome: '',             cliente: '11241', loja: '8' },
+  '09': { nome: '',             cliente: '11241', loja: '9' },
+  '11': { nome: '',             cliente: '11241', loja: '4' },
+  '12': { nome: 'Grand Jardim', cliente: '11241', loja: '5' },
+};
+const CFG_PADRAO = { cond: '72', vend: '1549', msg: 'PEDIDO SÃO DOMINGOS' };
+const salvo = store.get('sd.cfg2', {});
+let cfg = { ...CFG_PADRAO, ...salvo, lojas: {} };
+for (const n of new Set([...Object.keys(LOJAS_PADRAO), ...Object.keys(salvo.lojas || {})]))
+  cfg.lojas[n] = { nome: '', cliente: '', loja: '', ...LOJAS_PADRAO[n], ...(salvo.lojas || {})[n] };
+const infoLoja = loja => cfg.lojas[numLoja(loja)] || (cfg.lojas[numLoja(loja)] = { nome: '', cliente: '', loja: '' });
+const nomeLoja = loja => { const i = infoLoja(loja); return `LJ${numLoja(loja)}${i.nome ? ' · ' + i.nome : ''}`; };
 
 /* ---------- leitura de planilhas ---------- */
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -506,7 +528,7 @@ function render() {
   const neg = lst.filter(l => l.situacao === 'negativo').length;
   const prods = porProduto(linhas), semVinc = prods.filter(p => !p.r).length;
   $('#kpis').innerHTML = [
-    [lojaSel ? `Pedido ${curta(lojaSel)} (custo do cliente)` : 'Pedido das lojas (custo do cliente)', fmtR(soma(comPedido, 'total')), 'destaque'],
+    [lojaSel ? `Pedido ${nomeLoja(lojaSel)} (custo do cliente)` : 'Pedido das lojas (custo do cliente)', fmtR(soma(comPedido, 'total')), 'destaque'],
     ['Unidades', fmtN(soma(comPedido, 'qtd'))],
     ['Caixas', fmtN(soma(comPedido, 'caixas'))],
     ['Peso bruto', fmtN(soma(comPedido, 'peso')) + ' kg'],
@@ -515,16 +537,16 @@ function render() {
 
   const lojas = [...new Set(linhas.map(l => l.loja))].sort();
   const lg = linhas.filter(doGrupo);
-  $('#lojas').innerHTML = !lojas.length ? '' : [['', 'Todas', lg], ...lojas.map(lj => [lj, curta(lj), lg.filter(l => l.loja === lj)])].map(([k, nome, x]) => {
+  $('#lojas').innerHTML = !lojas.length ? '' : [['', 'Todas', lg], ...lojas.map(lj => [lj, nomeLoja(lj), lg.filter(l => l.loja === lj)])].map(([k, nome, x]) => {
     const p = x.filter(l => l.qtd > 0), n = x.filter(l => l.situacao === 'negativo').length;
-    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome">${esc(nome)}</span><span class="val">${fmtR(soma(p, 'total'))}</span><span class="det">${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx · ${fmtN(soma(p, 'peso'))} kg</span>${n ? `<span class="neg">${n} com estoque negativo</span>` : ''}</button>`;
+    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome">${esc(nome.split(' · ')[0])}</span>${nome.includes(' · ') ? `<span class="apelido">${esc(nome.split(' · ')[1])}</span>` : ''}<span class="val">${fmtR(soma(p, 'total'))}</span><span class="det">${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx · ${fmtN(soma(p, 'peso'))} kg</span>${n ? `<span class="neg">${n} com estoque negativo</span>` : ''}</button>`;
   }).join('');
 
   $('#nLoja').textContent = fmtN(comPedido.length);
   $('#nInd').textContent = fmtN(new Set(comPedido.map(l => l.grupo)).size);
   $('#nCons').textContent = fmtN(new Set(comPedido.map(l => l.prod)).size);
   $('#nBase').textContent = base ? `${fmtN(semVinc)} sem vínculo` : 'sem base';
-  $('.aba[data-aba="loja"] .t').textContent = lojaSel ? `Pedido ${curta(lojaSel)}` : 'Pedido por loja';
+  $('.aba[data-aba="loja"] .t').textContent = lojaSel ? `Pedido ${nomeLoja(lojaSel)}` : 'Pedido por loja';
   infoExport(comPedido);
 
   const t = $('#tabela');
@@ -561,7 +583,7 @@ function render() {
   const lim = 1500, vis = rows.slice(0, lim), mot = ['negativo', 'ruptura', 'sem', 'revisar'].includes($('#fSit').value);
   t.innerHTML = `<thead><tr><th>Loja</th><th>Código de barras</th><th>Descrição</th><th>Indústria</th><th class="num">Estoque</th><th class="num">DDV</th><th class="num">Venda/dia</th><th class="num">Sugestão</th><th class="num">Pedido (un.)</th><th class="num">Mult.</th><th class="num">Caixas</th><th class="num">Cobertura pós</th><th class="num">Custo un.</th><th class="num">Total</th><th>Situação</th>${mot ? '<th>Motivo</th>' : '<th>Últ. venda</th>'}</tr></thead><tbody>`
     + (vis.length ? vis.map(l => `<tr class="${l.situacao === 'negativo' ? 'negativo' : l.qtd > 0 ? 'pedir' : ''}">
-      <td>${esc(curta(l.loja))}</td><td class="fraco">${esc(l.ean)}</td><td class="desc">${esc(l.descricao)}</td>
+      <td>${esc(nomeLoja(l.loja))}</td><td class="fraco">${esc(l.ean)}</td><td class="desc">${esc(l.descricao)}</td>
       <td class="${l.r ? '' : 'fraco'}">${esc(l.r ? l.grupo : '—')}</td>
       <td class="num">${fmtN(l.estoque)}</td><td class="num">${fmtN(l.ddv)}</td>
       <td class="num">${l.venda === null ? '<span class="fraco">—</span>' : fmtN(l.venda, 2)}</td>
@@ -578,22 +600,25 @@ function render() {
     + '</tbody>';
 }
 function infoExport(comPedido) {
-  $('#expEscopo').textContent = lojaSel ? `· ${curta(lojaSel)}` : '· todas as lojas';
+  $('#expEscopo').textContent = lojaSel ? `· ${nomeLoja(lojaSel)}` : '· todas as lojas';
   const semCod = comPedido.filter(l => !l.codCli).length, semVinc = comPedido.filter(l => !l.r).length;
   $('#infoExpSD').textContent = comPedido.length ? `${fmtN(comPedido.length)} itens${semCod ? ` · ${semCod} sem código interno (vão com o código em branco)` : ''}` : 'Nenhum item com pedido.';
   $('#infoExpRota').textContent = comPedido.length ? `${fmtN(comPedido.length - semVinc)} itens${semVinc ? ` · ${semVinc} sem vínculo na base ficam fora` : ''}` : 'Nenhum item com pedido.';
 }
 function montarCfgLojas() {
-  ['cliente', 'cond', 'vend', 'msg'].forEach(k => { const el = document.querySelector(`.cfgIn[data-k="${k}"]`); if (el) el.value = cfg[k] ?? ''; });
+  ['cond', 'vend', 'msg'].forEach(k => { const el = document.querySelector(`.cfgIn[data-k="${k}"]`); if (el) el.value = cfg[k] ?? ''; });
   const nums = [...new Set(linhas.map(l => numLoja(l.loja)))].sort();
-  $('#cfgLojas').innerHTML = (nums.length ? nums : Object.keys(cfg.lojas)).map(n => `<label class="campo" for="cl${n}">LJ${n}<input id="cl${n}" class="cfg cfgLoja" data-n="${n}" value="${esc(cfg.lojas[n] ?? '')}"/></label>`).join('');
+  nums.forEach(n => cfg.lojas[n] ||= { nome: '', cliente: '', loja: '' });
+  $('#tabLojas').innerHTML = '<thead><tr><th>Loja</th><th>Nome de referência</th><th>Código cliente TOTVS</th><th>Loja cliente TOTVS</th></tr></thead><tbody>'
+    + [...new Set([...nums, ...Object.keys(cfg.lojas)])].sort().map(n => `<tr><td><strong>LJ${n}</strong></td>`
+      + ['nome', 'cliente', 'loja'].map(c => `<td><input class="cfgLoja" data-n="${n}" data-c="${c}" value="${esc(cfg.lojas[n]?.[c] ?? '')}" aria-label="${c} da LJ${n}"/></td>`).join('') + '</tr>').join('') + '</tbody>';
 }
 
 /* ---------- exportação ---------- */
 const nomeAba = s => s.replace(/[\\/?*[\]:]/g, '').slice(0, 31);
 const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const r2 = n => +(+n).toFixed(2);
-const sufixo = () => (lojaSel ? curta(lojaSel) + '_' : '') + hoje();
+const sufixo = () => (lojaSel ? curta(lojaSel) + (infoLoja(lojaSel).nome ? '_' + norm(infoLoja(lojaSel).nome) : '') + '_' : '') + hoje();
 function baixarWb(wb, nome) {
   try { XLSX.writeFile(wb, nome); toast('Arquivo gerado: ' + nome); }
   catch { toast('O download foi bloqueado neste visualizador. Abra o arquivo HTML no navegador para baixar.'); }
@@ -625,11 +650,11 @@ function exportarSD() {
 function exportarRota() {
   const itens = itensPedido().filter(l => l.r);
   if (!itens.length) return toast('Não há itens vinculados à base Rota para exportar.');
-  const semLoja = [...new Set(itens.map(l => numLoja(l.loja)).filter(n => !cfg.lojas[n]))];
-  if (semLoja.length) return toast(`Informe a loja TOTVS de ${semLoja.map(n => 'LJ' + n).join(', ')} em "Dados do pedido de venda".`);
+  const semLoja = [...new Set(itens.filter(l => !infoLoja(l.loja).cliente || !infoLoja(l.loja).loja).map(l => 'LJ' + numLoja(l.loja)))];
+  if (semLoja.length) return toast(`Informe o código de cliente e a loja TOTVS de ${semLoja.join(', ')} no cadastro das lojas.`);
   const dec = n => String(r2(n)).replace('.', ',');
   const linhasCsv = ['Codigo Cliente;Loja Cliente;Condição Pagamento;Codigo Vendedor;Mensagem Pedido;Não Alterar;Codigo Interno Rota;Quantidade Pedido;Não Alterar;Preço de Venda sem ST;Não Alterar',
-    ...itens.map(l => [cfg.cliente, cfg.lojas[numLoja(l.loja)], cfg.cond, cfg.vend, cfg.msg, 9, l.r.codigo.replace(/^0+/, ''), l.qtd, 1, dec(l.precoSemST), 1].join(';'))];
+    ...itens.map(l => [infoLoja(l.loja).cliente, infoLoja(l.loja).loja, cfg.cond, cfg.vend, cfg.msg, 9, l.r.codigo.replace(/^0+/, ''), l.qtd, 1, dec(l.precoSemST), 1].join(';'))];
   const txt = linhasCsv.join('\r\n') + '\r\n';
   const bytes = new Uint8Array(txt.length);
   for (let i = 0; i < txt.length; i++) { const c = txt.charCodeAt(i); bytes[i] = c < 256 ? c : 63; }   // ISO-8859-1, como o modelo do TOTVS
@@ -641,9 +666,9 @@ function exportarRelatorio() {
   const wb = XLSX.utils.book_new(), add = (rows, nome) => rows.length && XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), nome);
   const lojas = [...new Set(lst.map(l => l.loja))].sort();
   add(lojas.map(lj => { const x = lst.filter(l => l.loja === lj), p = x.filter(l => l.qtd > 0);
-    return { Loja: lj, Itens: p.length, Unidades: soma(p, 'qtd'), Caixas: r2(soma(p, 'caixas')), 'Peso bruto (kg)': r2(soma(p, 'peso')), Total: r2(soma(p, 'total')), 'Estoque negativo': x.filter(l => l.situacao === 'negativo').length, Ruptura: x.filter(l => l.situacao === 'ruptura').length }; }), 'Resumo');
+    return { Loja: lj, Nome: infoLoja(lj).nome, 'Cliente TOTVS': infoLoja(lj).cliente, 'Loja TOTVS': infoLoja(lj).loja, Itens: p.length, Unidades: soma(p, 'qtd'), Caixas: r2(soma(p, 'caixas')), 'Peso bruto (kg)': r2(soma(p, 'peso')), Total: r2(soma(p, 'total')), 'Estoque negativo': x.filter(l => l.situacao === 'negativo').length, Ruptura: x.filter(l => l.situacao === 'ruptura').length }; }), 'Resumo');
   add(porGrupo(lst).filter(g => g.qtd > 0).map(g => ({ 'Indústria': g.grupo, Itens: g.itens, Lojas: g.lojas.size, Unidades: g.qtd, Caixas: r2(g.caixas), 'Peso bruto (kg)': r2(g.peso), Total: r2(g.total) })), 'Por indústria');
-  const det = l => ({ Loja: l.loja, 'Código de Barras': l.ean, 'Cód. São Domingos': l.codCli, 'Cód. Rota': l.r?.codigo || '', 'Descrição': l.descricao, 'Indústria': l.r ? l.grupo : '',
+  const det = l => ({ Loja: l.loja, Nome: infoLoja(l.loja).nome, 'Código de Barras': l.ean, 'Cód. São Domingos': l.codCli, 'Cód. Rota': l.r?.codigo || '', 'Descrição': l.descricao, 'Indústria': l.r ? l.grupo : '',
     Estoque: l.estoque, DDV: l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda), 'Sugestão': l.sugestao, Pedido: l.qtd, 'Múltiplo': l.r?.mult || '', Fator: l.fator || '', Caixas: l.fator ? r2(l.caixas) : '',
     'Peso bruto (kg)': l.r ? r2(l.peso) : '', 'Custo c/ ST': l.custo, 'Preço s/ ST': l.precoSemST === null ? '' : r2(l.precoSemST), Total: r2(l.total), 'Última venda': l.ultVenda, 'Ajuste manual': l.ajustado ? 'Sim' : '', Alertas: l.alertas.join(' · ') });
   add(lst.filter(l => l.qtd > 0).map(det), 'Pedido');
@@ -707,8 +732,8 @@ $('#tabela').addEventListener('change', e => {
   calcular();
 });
 document.addEventListener('change', e => {
-  if (e.target.matches('.cfgIn')) { cfg[e.target.dataset.k] = e.target.value.trim(); store.set('sd.cfg', cfg); }
-  if (e.target.matches('.cfgLoja')) { cfg.lojas[e.target.dataset.n] = e.target.value.trim(); store.set('sd.cfg', cfg); }
+  if (e.target.matches('.cfgIn')) { cfg[e.target.dataset.k] = e.target.value.trim(); store.set('sd.cfg2', cfg); }
+  if (e.target.matches('.cfgLoja')) { cfg.lojas[e.target.dataset.n][e.target.dataset.c] = e.target.value.trim(); store.set('sd.cfg2', cfg); if (e.target.dataset.c === 'nome') render(); }
 });
 $('#btnExpSD').addEventListener('click', exportarSD);
 $('#btnExpRota').addEventListener('click', exportarRota);
