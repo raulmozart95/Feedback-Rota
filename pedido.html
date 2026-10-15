@@ -7,40 +7,40 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&display=swap"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  /* Layout: faixa branca com as duas marcas + filete neutro → planilhas + parâmetros → resumo → lojas → abas com tabela rolável → exportações */
+  /* Layout: faixa branca com as duas marcas + filete azul → planilhas + parâmetros → resumo → lojas → abas com tabela rolável → exportações */
   :root {
-    --bg: #f4f5f7; --surface: #ffffff; --surface-2: #f8f9fb;
-    --fg: #1d2330; --muted: #667085; --borda: #e3e6ec;
-    --accent: #3d4a66; --accent-fg: #ffffff; --accent-soft: #eef1f6; --titulo: #3d4a66;
-    --ok: #3f7a5a; --ok-bg: #edf5f0; --warn: #86682f; --warn-bg: #f7f1e5;
-    --bad: #b04a4a; --bad-bg: #fbeeee; --info: #3d4a66; --info-bg: #eef1f6;
+    --bg: #f2f5fb; --surface: #ffffff; --surface-2: #f6f8fd;
+    --fg: #1b2539; --muted: #61708c; --borda: #dde4f1;
+    --accent: #3a68c4; --accent-fg: #ffffff; --accent-soft: #e9f0fc; --titulo: #34589f;
+    --ok: #2f7d56; --ok-bg: #e7f5ed; --warn: #8a6524; --warn-bg: #fbf2e1;
+    --bad: #d23f3f; --bad-bg: #fdeaea; --info: #3a68c4; --info-bg: #e9f0fc;
     --f-display: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
     --f-body: 'Open Sans', 'Segoe UI', system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-    --bg: #111418; --surface: #181c22; --surface-2: #1e232a; --fg: #e4e7ec; --muted: #98a1b0; --borda: #2b313b;
-    --accent: #a9b6d3; --accent-fg: #111418; --accent-soft: #232a36; --titulo: #c3cbdb;
-    --ok: #8fc9a8; --ok-bg: #1c2e24; --warn: #d9b77a; --warn-bg: #352c1c; --bad: #e39a9a; --bad-bg: #3a2222; --info: #a9b6d3; --info-bg: #232a36;
+    --bg: #0f1522; --surface: #161e2f; --surface-2: #1c2539; --fg: #e5eaf4; --muted: #9caac4; --borda: #2a3650;
+    --accent: #8db1f2; --accent-fg: #0f1522; --accent-soft: #1f2d4a; --titulo: #b5cbf5;
+    --ok: #7fd0a5; --ok-bg: #16301f; --warn: #e3bd78; --warn-bg: #362b17; --bad: #ff8c8c; --bad-bg: #3f1d1d; --info: #8db1f2; --info-bg: #1f2d4a;
     color-scheme: dark; } }
   :root[data-theme="dark"] {
-    --bg: #111418; --surface: #181c22; --surface-2: #1e232a; --fg: #e4e7ec; --muted: #98a1b0; --borda: #2b313b;
-    --accent: #a9b6d3; --accent-fg: #111418; --accent-soft: #232a36; --titulo: #c3cbdb;
-    --ok: #8fc9a8; --ok-bg: #1c2e24; --warn: #d9b77a; --warn-bg: #352c1c; --bad: #e39a9a; --bad-bg: #3a2222; --info: #a9b6d3; --info-bg: #232a36;
+    --bg: #0f1522; --surface: #161e2f; --surface-2: #1c2539; --fg: #e5eaf4; --muted: #9caac4; --borda: #2a3650;
+    --accent: #8db1f2; --accent-fg: #0f1522; --accent-soft: #1f2d4a; --titulo: #b5cbf5;
+    --ok: #7fd0a5; --ok-bg: #16301f; --warn: #e3bd78; --warn-bg: #362b17; --bad: #ff8c8c; --bad-bg: #3f1d1d; --info: #8db1f2; --info-bg: #1f2d4a;
     color-scheme: dark; }
 
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
 
   /* faixa das marcas: sempre branca, para os logos manterem as cores originais */
-  .marcas { background: #ffffff; color: #3d4a66; padding-inline: 16px; padding-block: 12px; }
+  .marcas { background: #ffffff; color: #34589f; padding-inline: 16px; padding-block: 12px; }
   .marcas-in { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .marcas img { height: 52px; width: auto; display: block; }
   .marcas .x { font-family: var(--f-display); font-weight: 800; font-size: 18px; color: #9aa3bd; }
   .marcas .titulo { margin-left: auto; text-align: right; display: grid; gap: 2px; }
-  .marcas .titulo strong { font-family: var(--f-display); font-weight: 700; font-size: 17px; color: #3d4a66; letter-spacing: .3px; }
+  .marcas .titulo strong { font-family: var(--f-display); font-weight: 700; font-size: 17px; color: #34589f; letter-spacing: .3px; }
   .marcas .titulo span { font-size: 12px; color: #586582; }
   @media (max-width: 640px) { .marcas img { height: 40px; } .marcas .titulo { margin-left: 0; text-align: left; } }
-  .listra { height: 1px; background: var(--borda); }
+  .listra { height: 3px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 35%, transparent)); }
 
   main { max-width: 1280px; margin: 0 auto; padding-block: 20px 48px; padding-inline: 16px; display: grid; gap: 16px; }
   h2 { font-family: var(--f-display); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; color: var(--titulo); }
@@ -75,8 +75,8 @@
   .kpi { background: var(--surface); border: 1px solid var(--borda); border-radius: 10px; padding: 12px 14px; }
   .kpi .v { font-family: var(--f-display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
   .kpi .l { font-size: 12px; color: var(--muted); }
-  .kpi.destaque { border-color: color-mix(in srgb, var(--accent) 45%, var(--borda)); }
-  .kpi.alerta { border-color: color-mix(in srgb, var(--bad) 35%, var(--borda)); cursor: pointer; }
+  .kpi.destaque { border-color: color-mix(in srgb, var(--accent) 50%, var(--borda)); box-shadow: inset 0 -3px 0 var(--accent); }
+  .kpi.alerta { border-color: color-mix(in srgb, var(--bad) 55%, var(--borda)); box-shadow: inset 0 -3px 0 var(--bad); cursor: pointer; }
   .kpi.alerta .v { color: var(--bad); }
 
   .lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin-bottom: 14px; }
@@ -103,7 +103,8 @@
   td.num, th.num { text-align: right; }
   td.desc { white-space: normal; min-width: 220px; }
   tr.pedir td { background: transparent; }
-  tr.negativo td { background: color-mix(in srgb, var(--bad) 5%, transparent); }
+  tr.negativo td { background: color-mix(in srgb, var(--bad) 8%, transparent); }
+  tr.negativo td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
   tr.totais td { font-weight: 700; background: var(--surface-2); position: sticky; bottom: 0; }
   td input.qtd { width: 80px; text-align: right; padding: 4px 6px; font-weight: 700; }
   td input.qtd.editado { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
@@ -474,7 +475,7 @@ function calcular() {
     l.caixas = l.fator ? l.qtd / l.fator : 0;
     l.peso = l.r ? l.qtd * l.r.peso : 0;
     l.precoSemST = l.r ? l.custo / (1 + (l.r.st || 0)) : null;
-    l.cobPos = l.venda > 0 ? (Math.max(0, est) + l.qtd) / l.venda : null;
+    l.cobPos = l.venda > 0 && (est >= 0 || l.qtd > 0) ? (Math.max(0, est) + l.qtd) / l.venda : null;
     if (l.qtd > 0 && l.diasSemVenda > 30) l.alertas.push(`Sem venda há ${l.diasSemVenda} dias (última em ${l.ultVenda.slice(0, 10)})`);
     if (l.qtd > 0 && l.mult > 1 && l.cobPos > (cob + ent) * 2) l.alertas.push(`Múltiplo de ${l.mult} eleva a cobertura para ${fmtN(l.cobPos)} dias`);
   }
