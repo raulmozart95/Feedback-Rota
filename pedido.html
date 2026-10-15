@@ -174,6 +174,11 @@
         <label class="btn sec pequeno" for="arqCodigos">Atualizar códigos</label>
         <input type="file" id="arqCodigos" accept=".xls,.xlsx,.csv" hidden/>
       </div>
+      <div class="fonte">
+        <p><strong>De-para de códigos de barras</strong> (produto da loja com código de barras diferente da base Rota). <span id="infoDepara">Nenhum de-para carregado.</span></p>
+        <label class="btn sec pequeno" for="arqDepara">Carregar de-para</label>
+        <input type="file" id="arqDepara" accept=".xls,.xlsx,.csv" hidden/>
+      </div>
     </div>
 
     <div class="painel">
@@ -268,6 +273,7 @@
 const AMOSTRA = /*__AMOSTRA__*/null;
 const BASE_EMBUTIDA = /*__BASE__*/null;
 const CODIGOS_EMBUTIDOS = /*__CODIGOS__*/null;
+const DEPARA_EMBUTIDO = /*__DEPARA__*/null;
 
 const $ = s => document.querySelector(s);
 const fmtN = (n, d = 0) => (n ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -284,7 +290,8 @@ const DIA = 864e5;
 let linhas = [];            // DDV normalizado
 let ajustes = {};           // loja|produto → quantidade manual
 let base = null;            // { origem, data, itens: [[codigo, descricao, com, log, grupo, fator, peso, multiplo, st]] }
-let porCom = new Map(), porLog = new Map();
+let porCom = new Map(), porLog = new Map(), porCodRota = new Map();
+let depara = {};            // código de barras da loja → código Rota (validado)
 let codigos = {};           // código de barras → código interno São Domingos
 let aba = 'loja';
 let lojaSel = '';
@@ -400,10 +407,11 @@ function lerCodigos(wb) {
   return n;
 }
 function indexarBase() {
-  porCom = new Map(); porLog = new Map();
+  porCom = new Map(); porLog = new Map(); porCodRota = new Map();
   if (!base) { $('#infoBase').textContent = 'Não carregada.'; return; }
   for (const r of base.itens) {
     const it = { codigo: r[0], descricao: r[1], com: r[2], log: r[3], grupo: r[4], fator: r[5], peso: r[6], mult: r[7] || 1, st: r[8] || 0 };
+    porCodRota.set(r[0].replace(/^0+/, ''), it);
     for (const [mapa, k] of [[porCom, it.com], [porLog, it.log]]) {
       if (!k) continue;
       const atual = mapa.get(k);
@@ -416,11 +424,37 @@ function indexarBase() {
 function vincular(ean) {
   const k = eanN(ean);
   if (!k) return null;
+  const dp = depara[k] && porCodRota.get(depara[k]);
+  if (dp) return { ...dp, via: 'DE-PARA' };
   const r = porCom.get(k);
   if (r) return { ...r, via: 'CODBARCOM' };
   const r2 = porLog.get(k);
   return r2 ? { ...r2, via: 'CODBARLOG' } : null;
 }
+function lerDepara(wb) {
+  const novo = {};
+  for (const nome of wb.SheetNames) {
+    const m = matriz(wb.Sheets[nome]);
+    const hi = m.slice(0, 10).findIndex(r => { const h = r.map(norm); return h.some(x => x.startsWith('eanloja') || x === 'codigodebarras') && h.some(x => x.startsWith('codrota') || x === 'codigorota'); });
+    if (hi < 0) continue;
+    const h = m[hi].map(norm);
+    const iE = h.findIndex(x => x.startsWith('eanloja') || x === 'codigodebarras');
+    const iC = h.findIndex(x => x === 'codrota' || x === 'codigorota');
+    const iOk = h.findIndex(x => x.startsWith('confirma'));
+    const iCor = h.findIndex(x => x.startsWith('codrotacorreto'));
+    for (const r of m.slice(hi + 1)) {
+      const e = eanN(r[iE]); if (!e) continue;
+      const ok = iOk >= 0 ? norm(r[iOk]) : 's';
+      const cor = iCor >= 0 ? String(r[iCor] ?? '').trim() : '';
+      const cod = cor || (ok === 's' ? String(r[iC] ?? '').trim() : '');   // só entra o que foi confirmado ou corrigido
+      if (cod) novo[e] = soDig(cod).replace(/^0+/, '');
+    }
+  }
+  if (!Object.keys(novo).length) throw new Error('Nenhuma linha confirmada. Use as colunas "EAN loja" e "Cód. Rota", marcando S em "Confirma?" ou preenchendo "Cód. Rota correto".');
+  Object.assign(depara, novo); store.set('rota.depara', depara);
+  return Object.keys(novo).length;
+}
+function infoDepara() { const n = Object.keys(depara).length; $('#infoDepara').textContent = n ? `${fmtN(n)} códigos de barras vinculados manualmente.` : 'Nenhum de-para carregado.'; }
 function infoCodigos() { $('#infoCodigos').textContent = Object.keys(codigos).length ? `${fmtN(Object.keys(codigos).length)} códigos de barras com código interno.` : 'Nenhum código carregado.'; }
 function carregar(dados, nome, amostra = false) {
   linhas = dados.map(r => ({ loja: r[0], descricao: r[1], ean: r[2], estoque: r[3], ddv: r[4], entrada: r[5], ultVenda: r[6], custo: r[7], preco: r[8] }));
@@ -567,7 +601,7 @@ function render() {
     t.innerHTML = `<thead><tr><th>Código de barras</th><th>Descrição na loja</th><th>Cód. São Domingos</th><th>Vínculo</th><th>Cód. Rota</th><th>Descrição Rota</th><th>Indústria</th><th class="num">Fator</th><th class="num">Múltiplo</th><th class="num">ST</th><th class="num">Peso un.</th></tr></thead><tbody>`
       + (cs.length ? cs.map(c => { const r = c.r; return `<tr>
         <td>${esc(c.ean)}</td><td class="desc">${esc(c.descricao)}</td><td>${c.codCli ? esc(c.codCli) : '<span class="chip c-alerta">sem código</span>'}</td>
-        <td>${r ? `<span class="chip c-ok">Vinculado</span>${r.via === 'CODBARLOG' ? ' <span class="chip c-alerta">via CODBARLOG</span>' : ''}${r.duplicado ? ' <span class="chip c-alerta">EAN repetido</span>' : ''}` : '<span class="chip c-sem">Sem vínculo</span>'}</td>
+        <td>${r ? `<span class="chip c-ok">Vinculado</span>${r.via === 'CODBARLOG' ? ' <span class="chip c-alerta">via CODBARLOG</span>' : ''}${r.via === 'DE-PARA' ? ' <span class="chip c-pedir">via de-para</span>' : ''}${r.duplicado ? ' <span class="chip c-alerta">EAN repetido</span>' : ''}` : '<span class="chip c-sem">Sem vínculo</span>'}</td>
         ${r ? `<td>${esc(r.codigo)}</td><td class="desc">${esc(r.descricao)}</td><td>${esc(r.grupo)}</td><td class="num">${r.fator}</td><td class="num">${r.mult}</td><td class="num">${fmtN(r.st * 100, 2)}%</td><td class="num">${fmtN(r.peso, 3)} kg</td>` : '<td colspan="7" class="fraco">Código de barras não encontrado na base Rota: avaliar o cadastro do cliente.</td>'}</tr>`; }).join('')
         : '<tr><td colspan="11" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
     return;
@@ -707,12 +741,17 @@ async function abrirBase(f) {
     toast(`Base Rota atualizada: ${fmtN(base.itens.length)} produtos`);
   } catch (e) { toast(e.message || 'Não foi possível ler a base.'); }
 }
+async function abrirDepara(f) {
+  try { const n = lerDepara(await abrirWb(f)); infoDepara(); calcular(); toast(`${fmtN(n)} vínculos do de-para aplicados`); }
+  catch (e) { toast(e.message || 'Não foi possível ler o de-para.'); }
+}
 async function abrirCodigos(f) {
   try { const n = lerCodigos(await abrirWb(f)); infoCodigos(); calcular(); toast(`${fmtN(n)} códigos internos lidos`); }
   catch (e) { toast(e.message || 'Não foi possível ler os códigos.'); }
 }
 $('#arquivo').addEventListener('change', e => { e.target.files[0] && abrir(e.target.files[0]); e.target.value = ''; });
 $('#arqBase').addEventListener('change', e => { e.target.files[0] && abrirBase(e.target.files[0]); e.target.value = ''; });
+$('#arqDepara').addEventListener('change', e => { e.target.files[0] && abrirDepara(e.target.files[0]); e.target.value = ''; });
 $('#arqCodigos').addEventListener('change', e => { e.target.files[0] && abrirCodigos(e.target.files[0]); e.target.value = ''; });
 const drop = $('#drop');
 ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
@@ -744,7 +783,8 @@ $('#btnLimpar').addEventListener('click', () => { ajustes = {}; calcular(); toas
 base = store.get('rota.base', null) || BASE_EMBUTIDA;
 if (base && base.itens?.[0]?.length < 9) base = BASE_EMBUTIDA || null;   // base salva em versão antiga, sem múltiplo e ST
 codigos = { ...(CODIGOS_EMBUTIDOS || {}), ...store.get('sd.codigos', {}) };
-indexarBase(); infoCodigos(); montarCfgLojas();
+depara = { ...(DEPARA_EMBUTIDO || {}), ...store.get('rota.depara', {}) };
+indexarBase(); infoCodigos(); infoDepara(); montarCfgLojas();
 if (AMOSTRA) carregar(AMOSTRA, 'DDV_rota_1510.xls', true); else render();
 </script>
 </body>
