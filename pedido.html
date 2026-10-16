@@ -79,12 +79,12 @@
   .kpi.alerta { border-color: color-mix(in srgb, var(--bad) 55%, var(--borda)); box-shadow: inset 0 -3px 0 var(--bad); cursor: pointer; }
   .kpi.alerta .v { color: var(--bad); }
 
-  .lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin-bottom: 14px; }
-  .loja { text-align: left; font: inherit; color: var(--fg); background: var(--surface-2); border: 1.5px solid var(--borda); border-radius: 9px; padding: 9px 11px; cursor: pointer; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
-  .loja .nome { font-family: var(--f-display); font-weight: 800; font-size: 13px; }
-  .loja .val { font-weight: 700; }
-  .loja .det { font-size: 11.5px; color: var(--muted); }
-  .loja .neg { font-size: 11.5px; color: var(--bad); font-weight: 600; }
+  .lojas { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(118px, 1fr); gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .loja { text-align: left; font: inherit; color: var(--fg); background: var(--surface-2); border: 1.5px solid var(--borda); border-radius: 9px; padding: 8px 10px; cursor: pointer; display: grid; gap: 1px; align-content: start; font-variant-numeric: tabular-nums; }
+  .loja .nome { font-family: var(--f-display); font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .loja .val { font-weight: 700; font-size: 13.5px; margin-top: 2px; }
+  .loja .det { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .loja .neg { font-size: 11px; color: var(--bad); font-weight: 600; white-space: nowrap; }
   .loja[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 
   .barra { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
@@ -133,7 +133,7 @@
   .cad-lojas summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
   .cad-lojas table { max-width: 720px; }
   .cad-lojas td input { padding: 4px 6px; }
-  .loja .apelido { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .loja .apelido { font-family: var(--f-body); font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 4px; }
 
   .nota { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
   .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--accent-fg); padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; max-width: calc(100% - 32px); z-index: 5; }
@@ -336,7 +336,7 @@ const COLS = {
 };
 const COLS_BASE = {
   codigo: ['codigo'], descricao: ['descricao'], com: ['codbarcom', 'ean13'], log: ['codbarlog', 'codbar'],
-  grupo: ['grupo'], fator: ['fator'], peso: ['pesobruto'], mult: ['multiplo'], st: ['st'],
+  grupo: ['grupo'], fator: ['fator'], peso: ['pesobruto'], mult: ['multiplo'], st: ['st'], unid: ['unidvenda'],
 };
 function numero(v) {
   if (typeof v === 'number') return v;
@@ -380,7 +380,7 @@ function lerBase(wb) {
     const itens = m.slice(hi + 1).filter(r => String(g(r, 'codigo')).trim()).map(r => [
       String(g(r, 'codigo')).trim(), String(g(r, 'descricao')).trim(), eanN(g(r, 'com')), eanN(g(r, 'log')),
       String(g(r, 'grupo')).trim(), Math.max(1, Math.round(numero(g(r, 'fator')))), +numero(g(r, 'peso')).toFixed(4),
-      Math.max(1, Math.round(numero(g(r, 'mult')))), +numero(g(r, 'st')).toFixed(4),
+      Math.max(1, Math.round(numero(g(r, 'mult')))), +numero(g(r, 'st')).toFixed(4), String(g(r, 'unid')).trim(),
     ]);
     return { origem: nome, itens };
   }
@@ -410,7 +410,7 @@ function indexarBase() {
   porCom = new Map(); porLog = new Map(); porCodRota = new Map();
   if (!base) { $('#infoBase').textContent = 'Não carregada.'; return; }
   for (const r of base.itens) {
-    const it = { codigo: r[0], descricao: r[1], com: r[2], log: r[3], grupo: r[4], fator: r[5], peso: r[6], mult: r[7] || 1, st: r[8] || 0 };
+    const it = { codigo: r[0], descricao: r[1], com: r[2], log: r[3], grupo: r[4], fator: r[5], peso: r[6], mult: r[7] || 1, st: r[8] || 0, unid: r[9] || '' };
     porCodRota.set(r[0].replace(/^0+/, ''), it);
     for (const [mapa, k] of [[porCom, it.com], [porLog, it.log]]) {
       if (!k) continue;
@@ -424,8 +424,9 @@ function indexarBase() {
 function vincular(ean) {
   const k = eanN(ean);
   if (!k) return null;
-  const dp = depara[k] && porCodRota.get(depara[k]);
-  if (dp) return { ...dp, via: 'DE-PARA' };
+  const d = depara[k] && (typeof depara[k] === 'string' ? { cod: depara[k], conv: 1 } : depara[k]);
+  const dp = d && porCodRota.get(d.cod);
+  if (dp) return { ...dp, via: 'DE-PARA', conv: Math.max(1, d.conv || 1) };
   const r = porCom.get(k);
   if (r) return { ...r, via: 'CODBARCOM' };
   const r2 = porLog.get(k);
@@ -442,12 +443,13 @@ function lerDepara(wb) {
     const iC = h.findIndex(x => x === 'codrota' || x === 'codigorota');
     const iOk = h.findIndex(x => x.startsWith('confirma'));
     const iCor = h.findIndex(x => x.startsWith('codrotacorreto'));
+    const iConv = h.findIndex(x => x.startsWith('unidloja') || x.startsWith('unidadesloja') || x.startsWith('conversao'));
     for (const r of m.slice(hi + 1)) {
       const e = eanN(r[iE]); if (!e) continue;
       const ok = iOk >= 0 ? norm(r[iOk]) : 's';
       const cor = iCor >= 0 ? String(r[iCor] ?? '').trim() : '';
       const cod = cor || (ok === 's' ? String(r[iC] ?? '').trim() : '');   // só entra o que foi confirmado ou corrigido
-      if (cod) novo[e] = soDig(cod).replace(/^0+/, '');
+      if (cod) novo[e] = { cod: soDig(cod).replace(/^0+/, ''), conv: iConv >= 0 ? Math.max(1, Math.round(numero(r[iConv]) || 1)) : 1 };
     }
   }
   if (!Object.keys(novo).length) throw new Error('Nenhuma linha confirmada. Use as colunas "EAN loja" e "Cód. Rota", marcando S em "Confirma?" ou preenchendo "Cód. Rota correto".');
@@ -481,7 +483,9 @@ function calcular() {
     l.grupo = l.r?.grupo || SEM_GRUPO;
     l.fator = l.r?.fator || 0;
     // lote mínimo = meia caixa (ex.: fator 12 → 6; fator 36 → 18). O múltiplo da Rota só trava no palm do vendedor, não na importação.
-    l.meia = usarMult && l.r ? l.r.fator / 2 : 0;
+    l.conv = l.r?.conv || 1;              // unidades da loja em 1 unidade de venda Rota (ex.: 1 DP = 6 un.)
+    // produto vendido em display/pacote: lote = 1 unidade Rota; demais: meia caixa
+    l.meia = !l.r ? 0 : l.conv > 1 ? l.conv : usarMult ? l.r.fator / 2 : 0;
     l.mult = l.meia ? Math.ceil(l.meia) : 1;
     l.codCli = codigos[eanN(l.ean)] || '';
     if (ddv !== 0 && Math.sign(est) === Math.sign(ddv)) l.venda = est / ddv;          // DDV = estoque ÷ venda média diária
@@ -510,8 +514,9 @@ function calcular() {
     l.ajustado = l.chave in ajustes;
     l.qtd = l.ajustado ? emLote(ajustes[l.chave], l) : l.sugestao;
     l.total = l.qtd * l.custo;
-    l.caixas = l.fator ? l.qtd / l.fator : 0;
-    l.peso = l.r ? l.qtd * l.r.peso : 0;
+    l.qtdRota = l.qtd / l.conv;
+    l.caixas = l.fator ? l.qtdRota / l.fator : 0;
+    l.peso = l.r ? l.qtdRota * l.r.peso : 0;
     l.precoSemST = l.r ? l.custo / (1 + (l.r.st || 0)) : null;
     l.cobPos = l.venda > 0 && (est >= 0 || l.qtd > 0) ? (Math.max(0, est) + l.qtd) / l.venda : null;
     if (l.qtd > 0 && l.diasSemVenda > 30) l.alertas.push(`Sem venda há ${l.diasSemVenda} dias (última em ${l.ultVenda.slice(0, 10)})`);
@@ -573,7 +578,7 @@ function render() {
   const lg = linhas.filter(doGrupo);
   $('#lojas').innerHTML = !lojas.length ? '' : [['', 'Todas', lg], ...lojas.map(lj => [lj, nomeLoja(lj), lg.filter(l => l.loja === lj)])].map(([k, nome, x]) => {
     const p = x.filter(l => l.qtd > 0), n = x.filter(l => l.situacao === 'negativo').length;
-    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome">${esc(nome.split(' · ')[0])}</span>${nome.includes(' · ') ? `<span class="apelido">${esc(nome.split(' · ')[1])}</span>` : ''}<span class="val">${fmtR(soma(p, 'total'))}</span><span class="det">${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx · ${fmtN(soma(p, 'peso'))} kg</span>${n ? `<span class="neg">${n} com estoque negativo</span>` : ''}</button>`;
+    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome" title="${esc(nome)}">${esc(nome.split(' · ')[0])}${nome.includes(' · ') ? `<span class="apelido">${esc(nome.split(' · ')[1])}</span>` : ''}</span><span class="val">${fmtR(soma(p, 'total'))}</span><span class="det">${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx</span><span class="det">${fmtN(soma(p, 'peso'))} kg</span>${n ? `<span class="neg">${n} negativos</span>` : '<span class="det">&nbsp;</span>'}</button>`;
   }).join('');
 
   $('#nLoja').textContent = fmtN(comPedido.length);
@@ -598,12 +603,12 @@ function render() {
   if (aba === 'base') {
     const so = $('#fSit').value === 'semvinculo';
     const cs = prods.filter(p => doGrupo(p) && busca(p) && (!so || !p.r)).sort((a, b) => (!!a.r - !!b.r) || a.descricao.localeCompare(b.descricao));
-    t.innerHTML = `<thead><tr><th>Código de barras</th><th>Descrição na loja</th><th>Cód. São Domingos</th><th>Vínculo</th><th>Cód. Rota</th><th>Descrição Rota</th><th>Indústria</th><th class="num">Fator</th><th class="num">Múltiplo</th><th class="num">ST</th><th class="num">Peso un.</th></tr></thead><tbody>`
+    t.innerHTML = `<thead><tr><th>Código de barras</th><th>Descrição na loja</th><th>Cód. São Domingos</th><th>Vínculo</th><th>Cód. Rota</th><th>Descrição Rota</th><th>Indústria</th><th>Venda Rota</th><th class="num">Un. loja por un. Rota</th><th class="num">Fator</th><th class="num">ST</th><th class="num">Peso un.</th></tr></thead><tbody>`
       + (cs.length ? cs.map(c => { const r = c.r; return `<tr>
         <td>${esc(c.ean)}</td><td class="desc">${esc(c.descricao)}</td><td>${c.codCli ? esc(c.codCli) : '<span class="chip c-alerta">sem código</span>'}</td>
         <td>${r ? `<span class="chip c-ok">Vinculado</span>${r.via === 'CODBARLOG' ? ' <span class="chip c-alerta">via CODBARLOG</span>' : ''}${r.via === 'DE-PARA' ? ' <span class="chip c-pedir">via de-para</span>' : ''}${r.duplicado ? ' <span class="chip c-alerta">EAN repetido</span>' : ''}` : '<span class="chip c-sem">Sem vínculo</span>'}</td>
-        ${r ? `<td>${esc(r.codigo)}</td><td class="desc">${esc(r.descricao)}</td><td>${esc(r.grupo)}</td><td class="num">${r.fator}</td><td class="num">${r.mult}</td><td class="num">${fmtN(r.st * 100, 2)}%</td><td class="num">${fmtN(r.peso, 3)} kg</td>` : '<td colspan="7" class="fraco">Código de barras não encontrado na base Rota: avaliar o cadastro do cliente.</td>'}</tr>`; }).join('')
-        : '<tr><td colspan="11" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
+        ${r ? `<td>${esc(r.codigo)}</td><td class="desc">${esc(r.descricao)}</td><td>${esc(r.grupo)}</td><td>${esc(r.unid || '—')}</td><td class="num">${(r.conv || 1) > 1 ? `<strong>${r.conv}</strong>` : 1}</td><td class="num">${r.fator}</td><td class="num">${fmtN(r.st * 100, 2)}%</td><td class="num">${fmtN(r.peso, 3)} kg</td>` : '<td colspan="8" class="fraco">Código de barras não encontrado na base Rota: avaliar o cadastro do cliente.</td>'}</tr>`; }).join('')
+        : '<tr><td colspan="12" class="vazio">Nenhum produto com esse filtro.</td></tr>') + '</tbody>';
     return;
   }
   const rows = filtradas();
@@ -623,7 +628,7 @@ function render() {
       <td class="num">${l.venda === null ? '<span class="fraco">—</span>' : fmtN(l.venda, 2)}</td>
       <td class="num fraco">${fmtN(l.sugestao)}</td>
       <td class="num"><input class="qtd${l.ajustado ? ' editado' : ''}" type="number" min="0" step="${l.mult}" value="${l.qtd}" data-k="${esc(l.chave)}" aria-label="Pedido ${esc(l.descricao)}"/></td>
-      <td class="num fraco">${l.r ? l.mult : '—'}</td>
+      <td class="num fraco">${!l.r ? '—' : l.conv > 1 ? `${l.mult} <span class="chip c-pedir" title="1 ${esc(l.r.unid || 'un. Rota')} = ${l.conv} un. da loja">1 ${esc(l.r.unid || 'DP')}</span>` : l.mult}</td>
       <td class="num">${l.qtd ? fmtCx(l.caixas, l.fator) : '<span class="fraco">—</span>'}</td>
       <td class="num">${l.cobPos === null ? '<span class="fraco">—</span>' : fmtN(l.cobPos) + ' d'}</td>
       <td class="num">${fmtR(l.custo)}</td><td class="num">${fmtR(l.total)}</td>
@@ -688,7 +693,7 @@ function exportarRota() {
   if (semLoja.length) return toast(`Informe o código de cliente e a loja TOTVS de ${semLoja.join(', ')} no cadastro das lojas.`);
   const dec = n => String(r2(n)).replace('.', ',');
   const linhasCsv = ['Codigo Cliente;Loja Cliente;Condição Pagamento;Codigo Vendedor;Mensagem Pedido;Não Alterar;Codigo Interno Rota;Quantidade Pedido;Não Alterar;Preço de Venda sem ST;Não Alterar',
-    ...itens.map(l => [infoLoja(l.loja).cliente, infoLoja(l.loja).loja, cfg.cond, cfg.vend, cfg.msg, 9, l.r.codigo.replace(/^0+/, ''), l.qtd, 1, dec(l.precoSemST), 1].join(';'))];
+    ...itens.map(l => [infoLoja(l.loja).cliente, infoLoja(l.loja).loja, cfg.cond, cfg.vend, cfg.msg, 9, l.r.codigo.replace(/^0+/, ''), Math.round(l.qtdRota), 1, dec(l.precoSemST * l.conv), 1].join(';'))];
   const txt = linhasCsv.join('\r\n') + '\r\n';
   const bytes = new Uint8Array(txt.length);
   for (let i = 0; i < txt.length; i++) { const c = txt.charCodeAt(i); bytes[i] = c < 256 ? c : 63; }   // ISO-8859-1, como o modelo do TOTVS
@@ -703,7 +708,7 @@ function exportarRelatorio() {
     return { Loja: lj, Nome: infoLoja(lj).nome, 'Cliente TOTVS': infoLoja(lj).cliente, 'Loja TOTVS': infoLoja(lj).loja, Itens: p.length, Unidades: soma(p, 'qtd'), Caixas: r2(soma(p, 'caixas')), 'Peso bruto (kg)': r2(soma(p, 'peso')), Total: r2(soma(p, 'total')), 'Estoque negativo': x.filter(l => l.situacao === 'negativo').length, Ruptura: x.filter(l => l.situacao === 'ruptura').length }; }), 'Resumo');
   add(porGrupo(lst).filter(g => g.qtd > 0).map(g => ({ 'Indústria': g.grupo, Itens: g.itens, Lojas: g.lojas.size, Unidades: g.qtd, Caixas: r2(g.caixas), 'Peso bruto (kg)': r2(g.peso), Total: r2(g.total) })), 'Por indústria');
   const det = l => ({ Loja: l.loja, Nome: infoLoja(l.loja).nome, 'Código de Barras': l.ean, 'Cód. São Domingos': l.codCli, 'Cód. Rota': l.r?.codigo || '', 'Descrição': l.descricao, 'Indústria': l.r ? l.grupo : '',
-    Estoque: l.estoque, DDV: l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda), 'Sugestão': l.sugestao, Pedido: l.qtd, 'Lote': l.r ? l.mult : '', 'Múltiplo Rota': l.r?.mult || '', Fator: l.fator || '', Caixas: l.fator ? r2(l.caixas) : '',
+    Estoque: l.estoque, DDV: l.ddv, 'Venda/dia': l.venda === null ? '' : r2(l.venda), 'Sugestão': l.sugestao, Pedido: l.qtd, 'Lote': l.r ? l.mult : '', 'Un. loja por un. Rota': l.conv, 'Pedido (un. Rota)': l.r ? r2(l.qtdRota) : '', 'Unid. venda Rota': l.r?.unid || '', Fator: l.fator || '', Caixas: l.fator ? r2(l.caixas) : '',
     'Peso bruto (kg)': l.r ? r2(l.peso) : '', 'Custo c/ ST': l.custo, 'Preço s/ ST': l.precoSemST === null ? '' : r2(l.precoSemST), Total: r2(l.total), 'Última venda': l.ultVenda, 'Ajuste manual': l.ajustado ? 'Sim' : '', Alertas: l.alertas.join(' · ') });
   add(lst.filter(l => l.qtd > 0).map(det), 'Pedido');
   add(lst.filter(l => l.situacao === 'negativo').map(det), 'Estoque negativo');
