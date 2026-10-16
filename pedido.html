@@ -12,7 +12,7 @@
   /* Layout: menu lateral azul-marinho (fluxo + visões) | cabeçalho amarelo com título da tela e ações | conteúdo em seções numeradas com cartões */
   :root {
     --nav: #001f4d; --nav-fg: rgba(255,255,255,.78); --nav-ativo-bg: rgba(255,183,53,.16); --nav-ativo-fg: #ffca5e;
-    --topo: #ffb735; --topo-fg: #131a27;
+    --topo: #ffb735; --topo-fg: #131a27; --num-fg: #ffb735;
     --bg: #f4f6fa; --surface: #ffffff; --surface-2: #f7f9fc;
     --fg: #131a27; --muted: #4b586e; --borda: #dfe4ec;
     --accent: #0042a2; --accent-fg: #ffffff; --accent-soft: #e8effa;
@@ -23,14 +23,14 @@
     --f-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-    --nav: #000f29; --topo: #c98b14; --topo-fg: #0b1220;
+    --nav: #000f29; --topo: #c98b14; --topo-fg: #0b1220; --num-fg: #0b1220;
     --bg: #0b1220; --surface: #121b2e; --surface-2: #17223a; --fg: #e6ebf5; --muted: #a0abc2; --borda: #26324d;
     --accent: #8db1f2; --accent-fg: #0b1220; --accent-soft: #1b2a4a;
     --k1: #8db1f2; --k2: #5f8fe6; --k3: #4cc987; --k4: #ffca5e; --k5: #a39bf5; --k6: #fb8a4b;
     --ok: #4cc987; --ok-bg: #12301f; --warn: #ffca5e; --warn-bg: #352a12; --bad: #ff8585; --bad-bg: #3d1a1a; --info: #8db1f2; --info-bg: #1b2a4a;
     color-scheme: dark; } }
   :root[data-theme="dark"] {
-    --nav: #000f29; --topo: #c98b14; --topo-fg: #0b1220;
+    --nav: #000f29; --topo: #c98b14; --topo-fg: #0b1220; --num-fg: #0b1220;
     --bg: #0b1220; --surface: #121b2e; --surface-2: #17223a; --fg: #e6ebf5; --muted: #a0abc2; --borda: #26324d;
     --accent: #8db1f2; --accent-fg: #0b1220; --accent-soft: #1b2a4a;
     --k1: #8db1f2; --k2: #5f8fe6; --k3: #4cc987; --k4: #ffca5e; --k5: #a39bf5; --k6: #fb8a4b;
@@ -88,9 +88,9 @@
   .btn svg { width: 15px; height: 15px; }
   .btn:focus-visible, .nav:focus-visible, input:focus-visible, select:focus-visible, .aba:focus-visible, .pill:focus-visible, .loja:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .secao { display: grid; gap: 12px; min-width: 0; }
+  .secao { display: grid; gap: 12px; min-width: 0; align-content: start; }
   .secao-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .secao-cab .num { font-family: var(--f-mono); font-size: 11px; font-weight: 600; background: var(--k1); color: var(--topo); border-radius: 6px; padding: 2px 7px; }
+  .secao-cab .num { font-family: var(--f-mono); font-size: 11px; font-weight: 600; background: var(--k1); color: var(--num-fg); border-radius: 6px; padding: 2px 7px; }
   .secao-cab h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.2px; }
   .secao-cab p { margin: 0; color: var(--muted); font-size: 13px; flex: 1 1 260px; }
   .secao-cab .dir { margin-left: auto; display: flex; gap: 8px; }
@@ -237,6 +237,42 @@
   .vista[data-vista="pedido"] .tabela-wrap { border-radius: 12px; }
   .vista[data-vista="pedido"] .barra { gap: 8px; }
   .vista[data-vista="pedido"] .aba, .vista[data-vista="pedido"] .filtros select, .vista[data-vista="pedido"] .filtros input { padding-block: 6px; }
+
+  /* dashboard executivo */
+  :root { --i1: #fcd9b6; --i2: #f6a35c; --i3: #e2621b; --i4: #9c3a0b; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --i1: #6b3414; --i2: #a54d18; --i3: #e2701f; --i4: #ffae73; } }
+  :root[data-theme="dark"] { --i1: #6b3414; --i2: #a54d18; --i3: #e2701f; --i4: #ffae73; }
+  .kpis.hero { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  @media (max-width: 1250px) { .kpis.hero { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .kpis.hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .dash-2 .secao-cab { flex-wrap: nowrap; }
+  .dash-2 .secao-cab h2 { white-space: nowrap; }
+  .card .legenda-topo { margin: -4px 0 12px; font-size: 12.5px; color: var(--muted); }
+  .kpis.hero .kpi { padding: 16px 18px 14px; }
+  .kpis.hero .kpi .v { font-size: clamp(20px, 1.9vw, 28px); }
+  .empilhada { display: flex; gap: 2px; height: 34px; border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .empilhada span { display: block; height: 100%; min-width: 2px; }
+  .empilhada span:first-child { border-radius: 8px 0 0 8px; } .empilhada span:last-child { border-radius: 0 8px 8px 0; }
+  .legenda { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 16px; font-size: 12.5px; color: var(--muted); }
+  .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legenda b { color: var(--fg); font-weight: 700; margin-left: 4px; }
+  .faixas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 800px) { .faixas { grid-template-columns: 1fr; } }
+  .faixa-idade { border: 1px solid var(--borda); border-radius: 12px; padding: 12px 14px; display: grid; gap: 2px; background: var(--surface-2); }
+  .faixa-idade .t { font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .faixa-idade .t i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .faixa-idade .v { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .faixa-idade .d { font-size: 12px; color: var(--muted); }
+  td.calor { font-weight: 700; }
+  .barras.negativo .trilho span { background: var(--bad); }
+  .top { display: grid; gap: 0; padding-block: 6px; }
+  .top .item { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); font-size: 13px; }
+  .top .item:last-child { border-bottom: 0; }
+  .top .pos { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+  .top .nome { min-width: 0; display: grid; }
+  .top .nome strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top .nome span { font-size: 11.5px; color: var(--muted); }
+  .top .val { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
 </style>
 </head>
 <body>
@@ -367,41 +403,42 @@
       <!-- DASHBOARD -->
       <section class="vista" data-vista="dashboard" hidden>
         <div class="pills" id="pillsDash"></div>
+        <div class="kpis hero" id="dashKpis"></div>
+
         <div class="secao">
-          <div class="secao-cab"><span class="num">01</span><h2>Visão da semana</h2><p>Pedido sugerido e saúde do estoque nas lojas.</p></div>
-          <div class="kpis" id="dashKpis"></div>
-        </div>
-        <div class="secao">
-          <div class="secao-cab"><span class="num">02</span><h2>Sem giro</h2><p>Estoque parado: produtos com saldo e sem venda há mais de <input id="dDias" type="number" min="7" max="365" value="30" style="width: 64px; padding: 3px 6px;" aria-label="Dias sem venda"/> dias, ou com cobertura acima de 90 dias.</p><div class="dir"><button class="btn pdf" data-pdf="semgiro" type="button">↓ PDF</button></div></div>
-          <div class="pills" id="pillsGiro">
-            <button class="pill" data-giro="parado" aria-pressed="true">Sem venda</button>
-            <button class="pill" data-giro="excesso" aria-pressed="false">Cobertura acima de 90 dias</button>
+          <div class="secao-cab"><span class="num">01</span><h2>Idade do estoque</h2><p>Valor em estoque por dias desde a última venda (custo do cliente).</p><div class="dir"><button class="btn pdf" data-pdf="semgiro15" type="button">↓ +15 dias</button><button class="btn pdf" data-pdf="semgiro30" type="button">↓ +30 dias</button><button class="btn pdf" data-pdf="semgiro45" type="button">↓ +45 dias</button></div></div>
+          <div class="card">
+            <div class="empilhada" id="barraIdade" role="img" aria-label="Estoque por idade da última venda"></div>
+            <div class="legenda" id="legIdade"></div>
+            <div class="faixas" id="faixasIdade"></div>
           </div>
-          <div class="tabela-wrap curta"><table id="tabSemGiro"></table></div>
         </div>
+
+        <div class="secao">
+          <div class="secao-cab"><span class="num">02</span><h2>Saúde por loja</h2><p>Quanto do estoque de cada loja está sem giro; quanto mais escura a célula, maior a parcela parada.</p><div class="dir"><button class="btn pdf" data-pdf="lojas" type="button">↓ PDF</button></div></div>
+          <div class="tabela-wrap curta"><table id="tabSaude"></table></div>
+        </div>
+
         <div class="dash-2">
           <div class="secao">
-            <div class="secao-cab"><span class="num">03</span><h2>Ruptura</h2><div class="dir"><button class="btn pdf" data-pdf="ruptura" type="button">↓ PDF</button></div></div>
-            <div class="tabela-wrap curta"><table id="tabRuptura"></table></div>
+            <div class="secao-cab"><span class="num">03</span><h2>Indústrias com estoque parado</h2><div class="dir"><button class="btn pdf" data-pdf="industriaParada" type="button">↓ PDF</button></div></div>
+            <div class="card"><p class="legenda-topo">Valor sem venda há mais de 30 dias.</p><div class="barras parado" id="barrasParado"></div></div>
           </div>
           <div class="secao">
-            <div class="secao-cab"><span class="num">04</span><h2>Estoque negativo</h2><div class="dir"><button class="btn pdf" data-pdf="negativo" type="button">↓ PDF</button></div></div>
-            <div class="tabela-wrap curta"><table id="tabNegativo"></table></div>
+            <div class="secao-cab"><span class="num">04</span><h2>Estoque negativo por loja</h2><div class="dir"><button class="btn pdf" data-pdf="negativo" type="button">↓ PDF</button></div></div>
+            <div class="card"><p class="legenda-topo">Itens que precisam de inventário.</p><div class="barras negativo" id="barrasNeg"></div></div>
           </div>
         </div>
+
         <div class="dash-2">
           <div class="secao">
-            <div class="secao-cab"><span class="num">05</span><h2>Pedido por indústria</h2><div class="dir"><button class="btn pdf" data-pdf="industria" type="button">↓ PDF</button></div></div>
-            <div class="card"><div class="barras" id="barrasInd"></div></div>
+            <div class="secao-cab"><span class="num">05</span><h2>Maiores valores parados</h2><div class="dir"><button class="btn pdf" data-pdf="semgiro30" type="button">↓ PDF</button></div></div>
+            <div class="card"><p class="legenda-topo">Top 10 produtos sem venda há mais de 30 dias.</p><div class="top" id="topParados"></div></div>
           </div>
           <div class="secao">
-            <div class="secao-cab"><span class="num">06</span><h2>Estoque parado por indústria</h2></div>
-            <div class="card"><div class="barras parado" id="barrasParado"></div></div>
+            <div class="secao-cab"><span class="num">06</span><h2>Ruptura</h2><div class="dir"><button class="btn pdf" data-pdf="ruptura" type="button">↓ PDF</button></div></div>
+            <div class="card"><p class="legenda-topo">Sem estoque e com venda nos últimos 15 dias: definir o pedido manualmente.</p><div class="top" id="topRuptura"></div></div>
           </div>
-        </div>
-        <div class="secao">
-          <div class="secao-cab"><span class="num">07</span><h2>Resumo por loja</h2><div class="dir"><button class="btn pdf" data-pdf="lojas" type="button">↓ PDF</button></div></div>
-          <div class="tabela-wrap curta"><table id="tabResumoLojas"></table></div>
         </div>
       </section>
     </main>
@@ -875,7 +912,6 @@ function copiar() {
 let vista = 'importar';
 let ehAmostra = false;
 let nomeArquivo = '';
-let giroModo = 'parado';
 function irPara(v) {
   vista = v;
   document.querySelectorAll('.vista').forEach(s => s.hidden = s.dataset.vista !== v);
@@ -898,16 +934,16 @@ function renderShell() {
     importar: 'Planilha de estoque do cliente e bases de apoio',
     pedido: linhas.length ? `${escopoNome()} · ${fmtN(p.length)} itens · ${fmtR(soma(p, 'total'))}` : 'Anexe o DDV para gerar o pedido',
     exportar: `${escopoNome()} · arquivos de importação e PDF para o promotor`,
-    dashboard: `${escopoNome()} · sem giro, ruptura e estoque negativo`,
+    dashboard: `${escopoNome()} · idade do estoque, sem giro, ruptura e negativos`,
   }[vista];
-  $('#topoTitulo').textContent = { importar: 'Importar DDV', pedido: 'Analisar pedido', exportar: 'Exportar pedido', dashboard: 'Dashboard de giro' }[vista];
+  $('#topoTitulo').textContent = { importar: 'Importar DDV', pedido: 'Analisar pedido', exportar: 'Exportar pedido', dashboard: 'Dashboard executivo' }[vista];
   $('#topoSub').textContent = sub;
   const seta = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>';
   $('#topoAcoes').innerHTML = !linhas.length ? '' : {
     importar: `<button class="btn claro" data-ir="pedido" type="button">Analisar pedido ${seta}</button>`,
     pedido: `<button class="btn claro" data-ir="dashboard" type="button">Dashboard</button><button class="btn claro" data-ir="exportar" type="button">Exportar ${seta}</button>`,
     exportar: `<button class="btn claro" data-ir="pedido" type="button">Voltar ao pedido</button>`,
-    dashboard: `<button class="btn claro" data-ir="pedido" type="button">Ver pedido</button>`,
+    dashboard: `<button class="btn claro" id="btnPdfExec" type="button">↓ PDF executivo</button><button class="btn claro" data-ir="pedido" type="button">Ver pedido</button>`,
   }[vista];
   $('#rodTitulo').textContent = linhas.length ? nomeArquivo : 'Nenhum DDV carregado';
   $('#rodSub').textContent = linhas.length ? `${new Set(linhas.map(l => l.loja)).size} lojas${dataRef ? ' · última venda em ' + dataRef.toLocaleDateString('pt-BR') : ''}` : 'Pedido semanal · entrega em até 48 h';
@@ -931,22 +967,30 @@ function tabelaHTML(cols, rows, vazio, lim = 300) {
   return head + '<tbody>' + rows.slice(0, lim).map(r => '<tr>' + r.map((v, i) => `<td class="${cols[i].num ? 'num' : ''}${cols[i].desc ? ' desc' : ''}">${esc(v)}</td>`).join('') + '</tr>').join('')
     + (rows.length > lim ? `<tr><td colspan="${cols.length}" class="vazio">Mostrando ${lim} de ${fmtN(rows.length)}. O PDF traz a lista completa.</td></tr>` : '') + '</tbody>';
 }
-const diasLim = () => Math.max(1, +$('#dDias').value || 30);
 const valorEst = l => Math.max(0, l.estoque) * l.custo;
-function semGiro(modo) {
-  const d = diasLim(), lst = linhas.filter(daLoja);
-  const parado = l => l.estoque > 0 && l.diasSemVenda !== null && l.diasSemVenda > d;
-  return (modo === 'parado' ? lst.filter(parado) : lst.filter(l => l.estoque > 0 && !parado(l) && l.ddv > 90))
-    .sort((a, b) => valorEst(b) - valorEst(a));
-}
+const comEstoque = () => linhas.filter(l => daLoja(l) && l.estoque > 0);
+const IDADES = [
+  { k: 'i1', t: 'Até 15 dias', f: d => d !== null && d <= 15 },
+  { k: 'i2', t: '16 a 30 dias', f: d => d !== null && d > 15 && d <= 30 },
+  { k: 'i3', t: '31 a 45 dias', f: d => d !== null && d > 30 && d <= 45 },
+  { k: 'i4', t: 'Mais de 45 dias', f: d => d === null || d > 45 },   // sem data de venda conta como parado
+];
+const semVendaHa = (dias, lst = comEstoque()) => lst.filter(l => l.diasSemVenda === null || l.diasSemVenda > dias).sort((a, b) => valorEst(b) - valorEst(a));
+function semGiro(modo) { return semVendaHa(30); }
 const SECOES = {
-  semgiro: () => {
-    const modo = giroModo, ls = semGiro(modo);
-    return { titulo: modo === 'parado' ? `Sem giro · sem venda há mais de ${diasLim()} dias` : 'Sem giro · cobertura acima de 90 dias',
-      cols: [{ t: 'Loja' }, { t: 'Código de barras' }, { t: 'Descrição', desc: true }, { t: 'Indústria' }, { t: 'Estoque', num: true }, { t: 'Valor em estoque', num: true },
-        modo === 'parado' ? { t: 'Dias sem venda', num: true } : { t: 'Cobertura (dias)', num: true }, { t: 'Última venda' }],
-      rows: ls.map(l => [nomeLoja(l.loja), l.ean, l.descricao, l.r ? l.grupo : '—', fmtN(l.estoque), fmtR(valorEst(l)), modo === 'parado' ? fmtN(l.diasSemVenda) : fmtN(l.ddv), (l.ultVenda || '').slice(0, 10)]),
-      vazio: 'Nenhum produto parado nesse critério.' };
+  ...Object.fromEntries([15, 30, 45].map(d => ['semgiro' + d, () => {
+    const ls = semVendaHa(d);
+    return { titulo: `Sem giro · sem venda há mais de ${d} dias`,
+      cols: [{ t: 'Loja' }, { t: 'Código de barras' }, { t: 'Descrição', desc: true }, { t: 'Indústria' }, { t: 'Estoque', num: true }, { t: 'Valor em estoque', num: true }, { t: 'Dias sem venda', num: true }, { t: 'Última venda' }],
+      rows: ls.map(l => [nomeLoja(l.loja), l.ean, l.descricao, l.r ? l.grupo : '—', fmtN(l.estoque), fmtR(valorEst(l)), l.diasSemVenda === null ? 'sem registro' : fmtN(l.diasSemVenda), (l.ultVenda || '').slice(0, 10)]),
+      vazio: 'Nenhum produto nesse critério.' };
+  }])),
+  industriaParada: () => {
+    const m = new Map(); for (const l of comEstoque()) { const g = m.get(l.grupo) || { est: 0, par: 0, n: 0 }; g.est += valorEst(l); if (l.diasSemVenda === null || l.diasSemVenda > 30) { g.par += valorEst(l); g.n++; } m.set(l.grupo, g); }
+    const gs = [...m].filter(([, g]) => g.par > 0).sort((a, b) => b[1].par - a[1].par);
+    return { titulo: 'Indústrias com estoque parado (sem venda há mais de 30 dias)',
+      cols: [{ t: 'Indústria' }, { t: 'Itens parados', num: true }, { t: 'Valor parado', num: true }, { t: 'Estoque total', num: true }, { t: '% parado', num: true }],
+      rows: gs.map(([n, g]) => [n, fmtN(g.n), fmtR(g.par), fmtR(g.est), fmtN(g.par / (g.est || 1) * 100, 1) + '%']), vazio: 'Nenhuma indústria com estoque parado.' };
   },
   ruptura: () => {
     const ls = linhas.filter(l => daLoja(l) && l.situacao === 'ruptura').sort((a, b) => a.diasSemVenda - b.diasSemVenda);
@@ -968,44 +1012,97 @@ const SECOES = {
   },
   lojas: () => {
     const lojas = [...new Set(linhas.map(l => l.loja))].sort();
-    return { titulo: 'Resumo por loja',
-      cols: [{ t: 'Loja' }, { t: 'Pedido', num: true }, { t: 'Itens', num: true }, { t: 'Caixas', num: true }, { t: 'Peso (kg)', num: true }, { t: 'Estoque parado', num: true }, { t: 'Ruptura', num: true }, { t: 'Negativos', num: true }],
-      rows: lojas.map(lj => {
-        const x = linhas.filter(l => l.loja === lj), p = x.filter(l => l.qtd > 0), d = diasLim();
-        const par = x.filter(l => l.estoque > 0 && l.diasSemVenda !== null && l.diasSemVenda > d);
-        return [nomeLoja(lj), fmtR(soma(p, 'total')), fmtN(p.length), fmtN(soma(p, 'caixas')), fmtN(soma(p, 'peso')), fmtR(par.reduce((s, l) => s + valorEst(l), 0)),
-          fmtN(x.filter(l => l.situacao === 'ruptura').length), fmtN(x.filter(l => l.situacao === 'negativo').length)];
-      }), vazio: 'Sem lojas.' };
+    return { titulo: 'Saúde por loja',
+      cols: [{ t: 'Loja' }, { t: 'Estoque', num: true }, { t: '+15 dias', num: true }, { t: '+30 dias', num: true }, { t: '+45 dias', num: true }, { t: '% parado 30+', num: true }, { t: 'Negativos', num: true }, { t: 'Ruptura', num: true }, { t: 'Pedido', num: true }],
+      rows: saudeLojas().map(x => [x.nome, fmtR(x.est), fmtR(x.p15), fmtR(x.p30), fmtR(x.p45), fmtN(x.pct30, 1) + '%', fmtN(x.neg), fmtN(x.rup), fmtR(x.ped)]), vazio: 'Sem lojas.' };
   },
 };
 
 /* ---------- dashboard ---------- */
+function saudeLojas() {
+  return [...new Set(linhas.map(l => l.loja))].sort().map(lj => {
+    const x = linhas.filter(l => l.loja === lj), e = x.filter(l => l.estoque > 0);
+    const v = d => semVendaHa(d, e).reduce((s, l) => s + valorEst(l), 0);
+    const est = e.reduce((s, l) => s + valorEst(l), 0), p30 = v(30);
+    return { loja: lj, nome: nomeLoja(lj), est, p15: v(15), p30, p45: v(45), pct30: est ? p30 / est * 100 : 0,
+      neg: x.filter(l => l.situacao === 'negativo').length, rup: x.filter(l => l.situacao === 'ruptura').length, ped: soma(x.filter(l => l.qtd > 0), 'total') };
+  });
+}
 function barras(sel, itens, fmt) {
   const max = Math.max(...itens.map(i => i[1]), 1);
-  $(sel).innerHTML = itens.length ? itens.map(([n, v]) => `<div class="linha"><span class="nome" title="${esc(n)}">${esc(n)}</span><span class="trilho"><span style="width:${(v / max * 100).toFixed(1)}%"></span></span><span class="val">${fmt(v)}</span></div>`).join('')
+  $(sel).innerHTML = itens.length ? itens.map(([n, v, extra]) => `<div class="linha" title="${esc(n)}: ${esc(fmt(v))}${extra ? ' · ' + esc(extra) : ''}"><span class="nome">${esc(n)}</span><span class="trilho"><span style="width:${(v / max * 100).toFixed(1)}%"></span></span><span class="val">${fmt(v)}</span></div>`).join('')
     : '<p class="fraco" style="margin:0">Nada para mostrar.</p>';
+}
+function topLista(sel, itens) {
+  $(sel).innerHTML = itens.length ? itens.map(([t, sub, v], i) => `<div class="item"><span class="pos">${String(i + 1).padStart(2, '0')}</span><span class="nome"><strong title="${esc(t)}">${esc(t)}</strong><span>${esc(sub)}</span></span><span class="val">${esc(v)}</span></div>`).join('')
+    : '<p class="fraco" style="margin:8px 0">Nada para mostrar.</p>';
 }
 function renderDash() {
   pillsLojas('#pillsDash');
   if (!linhas.length) { $('#dashKpis').innerHTML = '<div class="card vazio">Anexe o DDV para ver o dashboard.</div>'; return; }
-  const lst = linhas.filter(daLoja), p = lst.filter(l => l.qtd > 0);
-  const par = semGiro('parado'), exc = semGiro('excesso');
-  const rup = lst.filter(l => l.situacao === 'ruptura').length, neg = lst.filter(l => l.situacao === 'negativo').length;
+  const lst = linhas.filter(daLoja), est = comEstoque(), p = lst.filter(l => l.qtd > 0);
+  const vEst = est.reduce((s, l) => s + valorEst(l), 0);
+  const par30 = semVendaHa(30, est), vPar = par30.reduce((s, l) => s + valorEst(l), 0);
+  const vendaR = est.filter(l => l.venda > 0).reduce((s, l) => s + l.venda * l.custo, 0);
+  const rup = lst.filter(l => l.situacao === 'ruptura'), neg = lst.filter(l => l.situacao === 'negativo');
+  const skus = new Set(lst.map(l => l.chave)).size;
   $('#dashKpis').innerHTML = [
-    ['', 'Pedido sugerido', fmtR(soma(p, 'total')), `${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx`],
-    ['k2', 'Peso do pedido', fmtN(soma(p, 'peso')) + ' kg', `${fmtN(soma(p, 'qtd'))} unidades`],
-    ['k6', 'Estoque parado', fmtR(par.reduce((s, l) => s + valorEst(l), 0)), `${fmtN(par.length)} itens sem venda há +${diasLim()} dias`],
-    ['k5', 'Cobertura acima de 90 dias', fmtR(exc.reduce((s, l) => s + valorEst(l), 0)), `${fmtN(exc.length)} itens com excesso`],
-    ['k4', 'Ruptura', fmtN(rup), 'sem estoque e com venda recente'],
-    ['alerta" data-ir-sit="negativo', 'Estoque negativo', fmtN(neg), 'clique para ver no pedido'],
+    ['', 'Estoque nas lojas', fmtMil(vEst), `${fmtN(est.length)} itens com saldo`],
+    ['k6', 'Sem giro +30 dias', fmtMil(vPar), `${fmtN(vEst ? vPar / vEst * 100 : 0, 1)}% do estoque · ${fmtN(par30.length)} itens`],
+    ['k2', 'Cobertura média', vendaR ? fmtN(vEst / vendaR) + ' dias' : '—', 'estoque ÷ venda diária em R$'],
+    ['k3', 'Pedido da semana', fmtMil(soma(p, 'total')), `${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx`],
+    ['k4', 'Ruptura', fmtN(rup.length), `${fmtN(skus ? rup.length / skus * 100 : 0, 1)}% dos itens da loja`],
+    ['alerta" data-ir-sit="negativo', 'Estoque negativo', fmtN(neg.length), 'clique para ver no pedido'],
   ].map(([c, l, v, d]) => `<div class="kpi ${c}"><span class="l">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join('');
-  document.querySelectorAll('#pillsGiro .pill').forEach(b => b.setAttribute('aria-pressed', b.dataset.giro === giroModo));
-  for (const [id, k] of [['#tabSemGiro', 'semgiro'], ['#tabRuptura', 'ruptura'], ['#tabNegativo', 'negativo'], ['#tabResumoLojas', 'lojas']]) {
-    const s = SECOES[k](); $(id).innerHTML = tabelaHTML(s.cols, s.rows, s.vazio);
-  }
-  barras('#barrasInd', porGrupo(lst).filter(g => g.qtd > 0).slice(0, 12).map(g => [g.grupo, g.total]), fmtR);
-  const pg = new Map(); par.forEach(l => pg.set(l.grupo, (pg.get(l.grupo) || 0) + valorEst(l)));
-  barras('#barrasParado', [...pg].sort((a, b) => b[1] - a[1]).slice(0, 12), fmtR);
+  $('#dashKpis .kpi').title = fmtR(vEst);
+
+  // 01 idade do estoque
+  const bk = IDADES.map(b => { const x = est.filter(l => b.f(l.diasSemVenda)); return { ...b, v: x.reduce((s, l) => s + valorEst(l), 0), n: x.length }; });
+  $('#barraIdade').innerHTML = bk.filter(b => b.v > 0).map(b => `<span style="flex: ${b.v} 1 0; background: var(--${b.k})" title="${b.t}: ${fmtR(b.v)} · ${fmtN(b.n)} itens · ${fmtN(b.v / (vEst || 1) * 100, 1)}%"></span>`).join('');
+  $('#legIdade').innerHTML = bk.map(b => `<span><i style="background: var(--${b.k})"></i>${b.t}<b>${fmtN(b.v / (vEst || 1) * 100, 1)}%</b></span>`).join('');
+  $('#faixasIdade').innerHTML = [[15, 'i2'], [30, 'i3'], [45, 'i4']].map(([d, k]) => {
+    const x = semVendaHa(d, est), v = x.reduce((s, l) => s + valorEst(l), 0);
+    return `<div class="faixa-idade"><span class="t"><i style="background: var(--${k})"></i>Sem venda há +${d} dias</span><span class="v">${fmtR(v)}</span><span class="d">${fmtN(x.length)} itens · ${fmtN(v / (vEst || 1) * 100, 1)}% do estoque</span></div>`;
+  }).join('');
+
+  // 02 saúde por loja (célula escurece com a parcela parada)
+  // um só tom, ficando mais forte com a parcela parada; o texto continua na cor normal para ser legível nos dois temas
+  const tom = pct => `color-mix(in srgb, var(--i3) ${pct >= 40 ? 55 : pct >= 25 ? 40 : pct >= 12 ? 26 : pct >= 5 ? 14 : 0}%, transparent)`;
+  const tinta = () => '';
+  const sl = saudeLojas();
+  $('#tabSaude').innerHTML = '<thead><tr><th>Loja</th><th class="num">Estoque</th><th class="num">+15 dias</th><th class="num">+30 dias</th><th class="num">+45 dias</th><th class="num">% parado 30+</th><th class="num">Negativos</th><th class="num">Ruptura</th><th class="num">Pedido</th></tr></thead><tbody>'
+    + sl.map(x => `<tr${x.loja === lojaSel ? ' style="outline: 2px solid var(--accent); outline-offset: -2px"' : ''}><td><strong>${esc(x.nome)}</strong></td><td class="num">${fmtR(x.est)}</td><td class="num">${fmtR(x.p15)}</td><td class="num">${fmtR(x.p30)}</td><td class="num">${fmtR(x.p45)}</td>`
+      + `<td class="num calor" style="background: ${tom(x.pct30)}; ${tinta(x.pct30)}">${fmtN(x.pct30, 1)}%</td><td class="num">${x.neg ? `<span class="chip c-negativo">${x.neg}</span>` : '0'}</td><td class="num">${fmtN(x.rup)}</td><td class="num">${fmtR(x.ped)}</td></tr>`).join('')
+    + (() => { const t = k => sl.reduce((s, x) => s + x[k], 0), e = t('est'); return `<tr class="totais"><td>Total</td><td class="num">${fmtR(e)}</td><td class="num">${fmtR(t('p15'))}</td><td class="num">${fmtR(t('p30'))}</td><td class="num">${fmtR(t('p45'))}</td><td class="num">${fmtN(e ? t('p30') / e * 100 : 0, 1)}%</td><td class="num">${fmtN(t('neg'))}</td><td class="num">${fmtN(t('rup'))}</td><td class="num">${fmtR(t('ped'))}</td></tr>`; })() + '</tbody>';
+
+  // 03 indústrias paradas · 04 negativos por loja
+  const m = new Map(); par30.forEach(l => m.set(l.grupo, (m.get(l.grupo) || 0) + valorEst(l)));
+  barras('#barrasParado', [...m].sort((a, b) => b[1] - a[1]).slice(0, 10), fmtR);
+  const nl = new Map(); neg.forEach(l => nl.set(nomeLoja(l.loja), (nl.get(nomeLoja(l.loja)) || 0) + 1));
+  barras('#barrasNeg', [...nl].sort((a, b) => b[1] - a[1]), v => fmtN(v) + ' itens');
+
+  // 05 top parados · 06 ruptura
+  topLista('#topParados', par30.slice(0, 10).map(l => [l.descricao, `${nomeLoja(l.loja)} · ${fmtN(l.estoque)} un. · ${l.diasSemVenda === null ? 'sem registro de venda' : l.diasSemVenda + ' dias sem venda'}`, fmtR(valorEst(l))]));
+  topLista('#topRuptura', rup.sort((a, b) => (b.r ? 1 : 0) - (a.r ? 1 : 0) || a.diasSemVenda - b.diasSemVenda).slice(0, 10).map(l => [l.descricao, `${nomeLoja(l.loja)} · ${l.r ? l.grupo : 'sem vínculo na base'}`, l.qtd ? fmtN(l.qtd) + ' un. no pedido' : l.diasSemVenda === 0 ? 'vendeu hoje' : `vendeu há ${l.diasSemVenda} d`]));
+  if (rup.length > 10) $('#topRuptura').insertAdjacentHTML('beforeend', `<p class="fraco" style="margin:8px 0 0; font-size:12px">+ ${fmtN(rup.length - 10)} itens no PDF.</p>`);
+}
+
+/* ---------- PDF executivo ---------- */
+function pdfExecutivo() {
+  if (!linhas.length) return toast('Carregue o DDV primeiro.');
+  const doc = novoPdf(); if (!doc) return;
+  const sub = `${escopoNome()} · DDV ${nomeArquivo}${dataRef ? ' · última venda em ' + dataRef.toLocaleDateString('pt-BR') : ''}`;
+  const titulo = 'Dashboard executivo · pedido e giro';
+  pdfCabecalho(doc, titulo, sub);
+  const kp = [...document.querySelectorAll('#dashKpis .kpi')].map(k => [k.querySelector('.l').textContent, k.querySelector('.v').textContent, k.querySelector('.d').textContent]);
+  let y = pdfTabela(doc, [{ t: 'Indicador' }, { t: 'Valor', num: true }, { t: 'Detalhe' }], kp, 82, titulo, sub);
+  const est = comEstoque(), vEst = est.reduce((s, l) => s + valorEst(l), 0);
+  const idades = IDADES.map(b => { const x = est.filter(l => b.f(l.diasSemVenda)); const v = x.reduce((s, l) => s + valorEst(l), 0); return [b.t, fmtN(x.length), fmtR(v), fmtN(v / (vEst || 1) * 100, 1) + '%']; });
+  y = pdfTabela(doc, [{ t: 'Idade do estoque (última venda)' }, { t: 'Itens', num: true }, { t: 'Valor', num: true }, { t: '% do estoque', num: true }], idades, y + 16, titulo, sub);
+  for (const k of ['lojas', 'industriaParada']) { const s2 = SECOES[k](); y = pdfTabela(doc, s2.cols, s2.rows.slice(0, 15), y + 16, titulo, sub); }
+  const top = semVendaHa(30, est).slice(0, 15).map(l => [nomeLoja(l.loja), l.descricao, fmtN(l.estoque), l.diasSemVenda === null ? '—' : fmtN(l.diasSemVenda), fmtR(valorEst(l))]);
+  pdfTabela(doc, [{ t: 'Loja' }, { t: 'Maiores valores parados (+30 dias)', desc: true }, { t: 'Estoque', num: true }, { t: 'Dias', num: true }, { t: 'Valor', num: true }], top, y + 16, titulo, sub);
+  salvarPdf(doc, `Dashboard_${sufixo()}.pdf`);
 }
 
 /* ---------- exportar ---------- */
@@ -1151,12 +1248,11 @@ document.querySelectorAll('.nav').forEach(b => b.addEventListener('click', () =>
 document.addEventListener('click', e => {
   const ir = e.target.closest('[data-ir]'); if (ir) return irPara(ir.dataset.ir);
   const pl = e.target.closest('.pill[data-loja]'); if (pl) { lojaSel = pl.dataset.loja; return render(); }
-  const gm = e.target.closest('.pill[data-giro]'); if (gm) { giroModo = gm.dataset.giro; return render(); }
+  if (e.target.closest('#btnPdfExec')) return pdfExecutivo();
   const ps = e.target.closest('[data-pdf]'); if (ps) return pdfSecao(ps.dataset.pdf);
   const pj = e.target.closest('[data-pdf-loja]'); if (pj) return pdfPromotor([pj.dataset.pdfLoja]);
   const ks = e.target.closest('[data-ir-sit]'); if (ks) { $('#fSit').value = ks.dataset.irSit; aba = 'loja'; document.querySelectorAll('.aba').forEach(x => x.setAttribute('aria-selected', x.dataset.aba === 'loja')); return irPara('pedido'); }
 });
-$('#dDias').addEventListener('input', render);
 $('#btnPdfTodas').addEventListener('click', () => pdfPromotor([...new Set(linhas.filter(daLoja).map(l => l.loja))].sort()));
 
 if (AMOSTRA) { carregar(AMOSTRA, 'DDV_rota_1510.xls', true); irPara('pedido'); } else irPara('importar');
