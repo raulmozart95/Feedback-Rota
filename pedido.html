@@ -165,17 +165,17 @@
       </div>
       <div class="arquivo" id="infoArquivo">Nenhum arquivo carregado.</div>
       <div class="fonte">
-        <p><strong>Base de produtos Rota</strong> (código Rota, indústria, fator, múltiplo, ST e peso). <span id="infoBase">Não carregada.</span></p>
+        <p><strong>Base de produtos Rota</strong>. <span id="infoBase">Não carregada.</span></p>
         <label class="btn sec pequeno" for="arqBase">Atualizar base</label>
         <input type="file" id="arqBase" accept=".xls,.xlsx" hidden/>
       </div>
       <div class="fonte">
-        <p><strong>Códigos internos São Domingos</strong> (usados na importação do cliente). <span id="infoCodigos">Nenhum código carregado.</span></p>
+        <p><strong>Códigos internos São Domingos</strong>. <span id="infoCodigos">Nenhum código carregado.</span></p>
         <label class="btn sec pequeno" for="arqCodigos">Atualizar códigos</label>
         <input type="file" id="arqCodigos" accept=".xls,.xlsx,.csv" hidden/>
       </div>
       <div class="fonte">
-        <p><strong>De-para de códigos de barras</strong> (produto da loja com código de barras diferente da base Rota). <span id="infoDepara">Nenhum de-para carregado.</span></p>
+        <p><strong>De-para de códigos de barras</strong>. <span id="infoDepara">Nenhum de-para carregado.</span></p>
         <label class="btn sec pequeno" for="arqDepara">Carregar de-para</label>
         <input type="file" id="arqDepara" accept=".xls,.xlsx,.csv" hidden/>
       </div>
@@ -190,12 +190,6 @@
           <input id="pEntrega" type="number" min="0" max="15" value="2"/></label>
       </div>
       <label class="chk" for="pMultiplo" style="margin-top: 10px;"><input type="checkbox" id="pMultiplo" checked/> Pedir em lotes de meia caixa</label>
-      <div class="formula">
-        <span>Venda/dia = <code>Estoque ÷ DDV</code></span>
-        <span>Pedido = <code>Venda/dia × (<span id="fCob">20</span> + <span id="fEnt">2</span>) − Estoque</code>, arredondado para cima em lotes de meia caixa.</span>
-        <span>Estoque negativo fica sem sugestão, para o comprador definir a quantidade.</span>
-        <span>Valor pelo custo do cliente (com ST). Caixas = <code>unidades ÷ fator</code>.</span>
-      </div>
     </div>
   </section>
 
@@ -474,7 +468,6 @@ function param(id, min, def) { const v = parseFloat($(id).value); return isNaN(v
 const emLote = (q, l) => q <= 0 ? 0 : l.meia ? Math.ceil(Math.ceil(q / l.meia - 1e-9) * l.meia) : Math.ceil(q);
 function calcular() {
   const cob = param('#pCobertura', 1, 20), ent = param('#pEntrega', 0, 2), usarMult = $('#pMultiplo').checked;
-  $('#fCob').textContent = cob; $('#fEnt').textContent = ent;
   for (const l of linhas) {
     const est = l.estoque, ddv = l.ddv;
     l.alertas = [];
