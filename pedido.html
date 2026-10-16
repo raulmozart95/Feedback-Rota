@@ -60,9 +60,9 @@
   .lateral .rodape { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding: 14px 20px; font-size: 12px; color: rgba(255,255,255,.65); display: grid; gap: 2px; }
   .lateral .rodape strong { color: #fff; font-size: 13px; }
 
-  .topo { background: var(--topo); color: var(--topo-fg); padding: 16px 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; position: sticky; top: 0; z-index: 4; }
-  .topo h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.2px; }
-  .topo p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+  .topo { background: var(--topo); color: var(--topo-fg); padding: 10px 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; position: sticky; top: 0; z-index: 4; }
+  .topo h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -.2px; }
+  .topo p { margin: 1px 0 0; font-size: 12.5px; opacity: .85; }
   .topo .acoes { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
   .conteudo { padding-block: 24px 48px; padding-inline: 28px; display: grid; gap: 20px; align-content: start; min-width: 0; }
   .vista[hidden] { display: none !important; }
@@ -113,7 +113,8 @@
   :root[data-theme="dark"] .pill[aria-pressed="true"] { color: #0b1220; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill[aria-pressed="true"] { color: #0b1220; } }
 
-  .lojas { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(124px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 2px; }
+  .lojas { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+  @media (max-width: 900px) { .lojas { grid-auto-columns: minmax(104px, 1fr); overflow-x: auto; } }
   .loja { text-align: left; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--borda); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: grid; gap: 1px; align-content: start; font-variant-numeric: tabular-nums; }
   .loja .nome { font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .loja .apelido { font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 4px; }
@@ -134,7 +135,7 @@
   .filtros input[type="search"] { width: 240px; max-width: 100%; }
   .filtros select { max-width: 240px; }
 
-  .tabela-wrap { overflow: auto; max-height: calc(100vh - 290px); min-height: 280px; border: 1px solid var(--borda); border-radius: 14px; background: var(--surface); }
+  .tabela-wrap { overflow: auto; max-height: calc(100vh - 235px); min-height: 320px; border: 1px solid var(--borda); border-radius: 14px; background: var(--surface); }
   .tabela-wrap.curta { max-height: 420px; min-height: 0; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--borda); text-align: left; white-space: nowrap; }
@@ -216,6 +217,26 @@
   .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--k1); color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px; max-width: calc(100% - 32px); z-index: 20; }
   :root[data-theme="dark"] .toast { color: #0b1220; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast { color: #0b1220; } }
+
+  /* tela de pedido compacta: o espaço vai para a tabela */
+  .vista[data-vista="pedido"] { gap: 10px; }
+  .kpis.faixa { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kpis.faixa .kpi { flex: 1 1 auto; padding: 7px 12px; border-radius: 10px; border-left-width: 3px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .kpis.faixa .kpi .v { font-size: 17px; }
+  .kpis.faixa .kpi .l { font-size: 10px; white-space: nowrap; }
+  .kpis.faixa .kpi { flex-wrap: nowrap; min-width: 0; }
+  .kpis.faixa .kpi .d { display: none; }
+  .vista[data-vista="pedido"] .loja { padding: 6px 9px; border-radius: 10px; position: relative; min-width: 0; }
+  .vista[data-vista="pedido"] .loja .val, .vista[data-vista="pedido"] .loja .nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .loja .badge-neg { position: absolute; top: 5px; right: 6px; font-size: 10px; font-weight: 800; color: var(--bad); background: var(--bad-bg); border-radius: 999px; padding: 0 6px; }
+  .vista[data-vista="pedido"] td { padding-block: 5px; }
+  .vista[data-vista="pedido"] td input.qtd { padding-block: 2px; }
+  .vista[data-vista="pedido"] .filtros input[type="search"] { width: 200px; }
+  .vista[data-vista="pedido"] .filtros select { max-width: 170px; }
+  .vista[data-vista="pedido"] .loja .val { font-size: 13px; margin-top: 0; }
+  .vista[data-vista="pedido"] .tabela-wrap { border-radius: 12px; }
+  .vista[data-vista="pedido"] .barra { gap: 8px; }
+  .vista[data-vista="pedido"] .aba, .vista[data-vista="pedido"] .filtros select, .vista[data-vista="pedido"] .filtros input { padding-block: 6px; }
 </style>
 </head>
 <body>
@@ -288,7 +309,7 @@
 
       <!-- 02 · PEDIDO -->
       <section class="vista" data-vista="pedido" hidden>
-        <div class="kpis" id="kpis" aria-label="Resumo do pedido"></div>
+        <div class="kpis faixa" id="kpis" aria-label="Resumo do pedido"></div>
         <div class="lojas" id="lojas"></div>
         <div class="barra">
           <div class="abas" role="tablist">
@@ -396,6 +417,7 @@ const DEPARA_EMBUTIDO = /*__DEPARA__*/null;
 
 const $ = s => document.querySelector(s);
 const fmtN = (n, d = 0) => (n ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtMil = n => n >= 1e6 ? 'R$ ' + fmtN(n / 1e6, 1) + ' mi' : n >= 1e3 ? 'R$ ' + fmtN(n / 1e3, 1) + ' mil' : fmtR(n);
 const fmtR = n => (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const curta = loja => String(loja).split(' - ')[0].trim();
@@ -582,7 +604,7 @@ function carregar(dados, nome, amostra = false) {
   linhas.forEach(l => { l.prod = eanN(l.ean) || 'd:' + norm(l.descricao); l.chave = l.loja + '|' + l.prod; l.dtVenda = data(l.ultVenda); });
   dataRef = linhas.reduce((m, l) => l.dtVenda && l.dtVenda > m ? l.dtVenda : m, null);   // dia da extração do DDV
   ajustes = {}; lojaSel = ''; nomeArquivo = nome;
-  $('#avisoAmostra').hidden = !amostra;
+  ehAmostra = amostra;
   $('#infoArquivo').textContent = `${nome} · ${fmtN(linhas.length)} linhas · ${new Set(linhas.map(l => l.loja)).size} lojas · ${fmtN(new Set(linhas.map(l => l.prod)).size)} produtos${dataRef ? ' · última venda em ' + dataRef.toLocaleDateString('pt-BR') : ''}`;
   infoCodigos(); montarCfgLojas(); calcular();
 }
@@ -685,7 +707,7 @@ function renderPedido() {
   const neg = lst.filter(l => l.situacao === 'negativo').length;
   const prods = porProduto(linhas), semVinc = prods.filter(p => !p.r).length;
   $('#kpis').innerHTML = [
-    ['', 'Pedido · custo do cliente', fmtR(soma(comPedido, 'total')), `${fmtN(comPedido.length)} itens`],
+    ['', 'Pedido', fmtR(soma(comPedido, 'total')), `${fmtN(comPedido.length)} itens`],
     ['k2', 'Unidades', fmtN(soma(comPedido, 'qtd')), `${fmtN(new Set(comPedido.map(l => l.prod)).size)} produtos`],
     ['k3', 'Caixas', fmtN(soma(comPedido, 'caixas')), 'pelo fator da base Rota'],
     ['k4', 'Peso bruto', fmtN(soma(comPedido, 'peso')) + ' kg', 'para a carga'],
@@ -696,7 +718,7 @@ function renderPedido() {
   const lg = linhas.filter(doGrupo);
   $('#lojas').innerHTML = !lojas.length ? '' : [['', 'Todas', lg], ...lojas.map(lj => [lj, nomeLoja(lj), lg.filter(l => l.loja === lj)])].map(([k, nome, x]) => {
     const p = x.filter(l => l.qtd > 0), n = x.filter(l => l.situacao === 'negativo').length;
-    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome" title="${esc(nome)}">${esc(nome.split(' · ')[0])}${nome.includes(' · ') ? `<span class="apelido">${esc(nome.split(' · ')[1])}</span>` : ''}</span><span class="val">${fmtR(soma(p, 'total'))}</span><span class="det">${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx</span><span class="det">${fmtN(soma(p, 'peso'))} kg</span>${n ? `<span class="neg">${n} negativos</span>` : '<span class="det">&nbsp;</span>'}</button>`;
+    return `<button class="loja" data-loja="${esc(k)}" aria-pressed="${k === lojaSel}"><span class="nome" title="${esc(nome)}">${esc(nome.split(' · ')[0])}${nome.includes(' · ') ? `<span class="apelido">${esc(nome.split(' · ')[1])}</span>` : ''}</span><span class="val" title="${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx · ${fmtN(soma(p, 'peso'))} kg">${fmtMil(soma(p, 'total'))} <span class="det">· ${fmtN(p.length)} it</span></span>${n ? `<span class="badge-neg" title="${n} itens com estoque negativo">${n}</span>` : ''}</button>`;
   }).join('');
 
   $('#nLoja').textContent = fmtN(comPedido.length);
@@ -851,11 +873,13 @@ function copiar() {
 
 /* ---------- telas ---------- */
 let vista = 'importar';
+let ehAmostra = false;
 let nomeArquivo = '';
 let giroModo = 'parado';
 function irPara(v) {
   vista = v;
   document.querySelectorAll('.vista').forEach(s => s.hidden = s.dataset.vista !== v);
+  $('#avisoAmostra').hidden = !(ehAmostra && v === 'importar');
   document.querySelectorAll('.nav').forEach(b => b.dataset.vista === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   if (v === 'exportar') montarCfgLojas();
   render();
