@@ -273,6 +273,24 @@
   .top .nome strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .top .nome span { font-size: 11.5px; color: var(--muted); }
   .top .val { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* seleção múltipla de indústrias */
+  .multi { position: relative; }
+  .multi details > summary { list-style: none; cursor: pointer; border: 1px solid var(--borda); background: var(--surface); border-radius: 10px; padding: 6px 12px; font-size: 13px; display: flex; gap: 6px; align-items: center; white-space: nowrap; max-width: 300px; }
+  .multi details > summary::-webkit-details-marker { display: none; }
+  .multi details > summary::after { content: '▾'; color: var(--muted); margin-left: 2px; }
+  .multi summary span:first-child { color: var(--muted); }
+  .multi summary strong { overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+  .multi summary .cont { background: var(--accent); color: var(--accent-fg); border-radius: 999px; font-size: 11px; font-weight: 800; padding: 0 7px; }
+  .multi details[open] > summary { border-color: var(--accent); }
+  .multi .pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 10; width: min(360px, 90vw); background: var(--surface); border: 1px solid var(--borda); border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 20, 60, .18); padding: 10px; display: grid; gap: 8px; }
+  .multi .pop input[type="search"] { width: 100%; }
+  .multi .acoes-multi { display: flex; gap: 6px; }
+  .multi .lista { max-height: 320px; overflow-y: auto; display: grid; }
+  .multi .op { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .multi .op:hover { background: var(--surface-2); }
+  .multi .op .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .multi .op .v { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -364,7 +382,7 @@
               <option value="revisar">Para revisar</option>
               <option value="semvinculo">Sem vínculo na base</option>
             </select>
-            <select id="fGrupo" aria-label="Filtrar indústria"><option value="">Todas as indústrias</option></select>
+            <div class="multi" data-multi></div>
             <input type="search" id="fBusca" placeholder="Buscar produto ou código de barras" aria-label="Buscar produto"/>
           </div>
         </div>
@@ -374,7 +392,7 @@
 
       <!-- 03 · EXPORTAR -->
       <section class="vista" data-vista="exportar" hidden>
-        <div class="pills" id="pillsExp"></div>
+        <div class="barra"><div class="pills" id="pillsExp"></div><div class="multi" data-multi style="margin-left: auto;"></div></div>
         <div class="secao">
           <div class="secao-cab"><span class="num">01</span><h2>Arquivos de importação</h2><p id="expEscopo"></p></div>
           <div class="exp-grid">
@@ -699,9 +717,8 @@ function calcular() {
     if (l.qtd > 0 && l.diasSemVenda > 30) l.alertas.push(`Sem venda há ${l.diasSemVenda} dias (última em ${l.ultVenda.slice(0, 10)})`);
     if (l.qtd > 0 && l.mult > 1 && l.cobPos > (cob + ent) * 2) l.alertas.push(`Lote de ${l.mult} un. eleva a cobertura para ${fmtN(l.cobPos)} dias`);
   }
-  const grupos = [...new Set(linhas.map(l => l.grupo))].sort((a, b) => (a === SEM_GRUPO) - (b === SEM_GRUPO) || a.localeCompare(b));
-  const sel = $('#fGrupo').value;
-  $('#fGrupo').innerHTML = '<option value="">Todas as indústrias</option>' + grupos.map(g => `<option${g === sel ? ' selected' : ''}>${esc(g)}</option>`).join('');
+  const existentes = new Set(linhas.map(l => l.grupo));
+  gruposSel.forEach(g => existentes.has(g) || gruposSel.delete(g));
   render();
 }
 
@@ -721,7 +738,8 @@ function agrupar(lst, chave, extra) {
 const porProduto = lst => agrupar(lst, l => l.prod, l => ({ descricao: l.descricao, ean: l.ean, r: l.r, grupo: l.grupo, fator: l.fator, codCli: l.codCli }));
 const porGrupo = lst => agrupar(lst, l => l.grupo, l => ({ grupo: l.grupo }));
 const daLoja = l => !lojaSel || l.loja === lojaSel;
-const doGrupo = l => !$('#fGrupo').value || l.grupo === $('#fGrupo').value;
+let gruposSel = new Set();   // indústrias escolhidas; vazio = todas
+const doGrupo = l => !gruposSel.size || gruposSel.has(l.grupo);
 function busca(l) { const q = norm($('#fBusca').value); return !q || norm(l.descricao + l.ean + (l.r?.codigo || '') + (l.codCli || '')).includes(q); }
 const SIT = {
   pedido: l => l.qtd > 0, negativo: l => l.situacao === 'negativo', ruptura: l => l.situacao === 'ruptura',
@@ -834,7 +852,8 @@ function montarCfgLojas() {
 const nomeAba = s => s.replace(/[\\/?*[\]:]/g, '').slice(0, 31);
 const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const r2 = n => +(+n).toFixed(2);
-const sufixo = () => (lojaSel ? curta(lojaSel) + (infoLoja(lojaSel).nome ? '_' + norm(infoLoja(lojaSel).nome) : '') + '_' : '') + hoje();
+const sufixo = () => (lojaSel ? curta(lojaSel) + (infoLoja(lojaSel).nome ? '_' + norm(infoLoja(lojaSel).nome) : '') + '_' : '')
+  + (gruposSel.size === 1 ? norm([...gruposSel][0]) + '_' : gruposSel.size ? gruposSel.size + 'industrias_' : '') + hoje();
 function baixarWb(wb, nome) {
   try { XLSX.writeFile(wb, nome); toast('Arquivo gerado: ' + nome); }
   catch { toast('O download foi bloqueado neste visualizador. Abra o arquivo HTML no navegador para baixar.'); }
@@ -923,18 +942,20 @@ function irPara(v) {
 }
 function render() {
   renderShell();
+  renderMulti();
   if (vista === 'pedido') renderPedido();
   else if (vista === 'dashboard') renderDash();
   else if (vista === 'exportar') renderExport();
 }
-const escopoNome = () => lojaSel ? nomeLoja(lojaSel) : 'Todas as lojas';
+const nomeGrupos = () => !gruposSel.size ? '' : gruposSel.size === 1 ? [...gruposSel][0] : `${gruposSel.size} indústrias`;
+const escopoNome = () => (lojaSel ? nomeLoja(lojaSel) : 'Todas as lojas') + (gruposSel.size ? ' · ' + nomeGrupos() : '');
 function renderShell() {
-  const lst = linhas.filter(daLoja), p = lst.filter(l => l.qtd > 0);
+  const p = escopo().filter(l => l.qtd > 0);
   const sub = {
     importar: 'Planilha de estoque do cliente e bases de apoio',
     pedido: linhas.length ? `${escopoNome()} · ${fmtN(p.length)} itens · ${fmtR(soma(p, 'total'))}` : 'Anexe o DDV para gerar o pedido',
     exportar: `${escopoNome()} · arquivos de importação e PDF para o promotor`,
-    dashboard: `${escopoNome()} · idade do estoque, sem giro, ruptura e negativos`,
+    dashboard: `${lojaSel ? nomeLoja(lojaSel) : 'Todas as lojas'} · idade do estoque, sem giro, ruptura e negativos`,
   }[vista];
   $('#topoTitulo').textContent = { importar: 'Importar DDV', pedido: 'Analisar pedido', exportar: 'Exportar pedido', dashboard: 'Dashboard executivo' }[vista];
   $('#topoSub').textContent = sub;
@@ -1112,7 +1133,7 @@ function renderExport() {
   infoExport(comPedido);
   const lojas = [...new Set(linhas.filter(daLoja).map(l => l.loja))].sort();
   $('#pdfLojas').innerHTML = lojas.length ? lojas.map(lj => {
-    const p = linhas.filter(l => l.loja === lj && l.qtd > 0);
+    const p = linhas.filter(l => l.loja === lj && l.qtd > 0 && doGrupo(l));
     return `<div class="pdf-loja"><div class="t"><strong>${esc(nomeLoja(lj))}</strong><span>${fmtN(p.length)} itens · ${fmtN(soma(p, 'caixas'))} cx · ${fmtN(soma(p, 'peso'))} kg</span></div><button class="btn pdf" data-pdf-loja="${esc(lj)}" type="button" ${p.length ? '' : 'disabled'}>↓ PDF</button></div>`;
   }).join('') : '<p class="fraco">Anexe o DDV para gerar os PDFs.</p>';
 }
@@ -1166,11 +1187,11 @@ function pdfPromotor(lojas) {
   const prazo = param('#pEntrega', 0, 2);
   let primeira = true;
   for (const lj of lojas) {
-    const itens = linhas.filter(l => l.loja === lj && l.qtd > 0).sort((a, b) => a.grupo.localeCompare(b.grupo) || a.descricao.localeCompare(b.descricao));
+    const itens = linhas.filter(l => l.loja === lj && l.qtd > 0 && doGrupo(l)).sort((a, b) => a.grupo.localeCompare(b.grupo) || a.descricao.localeCompare(b.descricao));
     if (!itens.length) continue;
     if (!primeira) doc.addPage();
     primeira = false;
-    const titulo = `Pedido ${nomeLoja(lj)}`, sub = `O que vai chegar na loja · entrega em até ${prazo * 24} h após o pedido · ${fmtN(itens.length)} itens`;
+    const titulo = `Pedido ${nomeLoja(lj)}`, sub = `${gruposSel.size ? nomeGrupos() + ' · ' : ''}O que vai chegar na loja · entrega em até ${prazo * 24} h após o pedido · ${fmtN(itens.length)} itens`;
     pdfCabecalho(doc, titulo, sub);
     const emb = l => !l.r ? '—' : l.conv > 1 ? `${fmtN(l.qtdRota)} ${l.r.unid || 'DP'}` : l.fator ? `${fmtN(l.caixas, Number.isInteger(+l.caixas.toFixed(2)) ? 0 : 1)} cx de ${l.fator}` : '—';
     const rows = itens.map(l => [l.r ? l.grupo : '—', l.ean, l.descricao, fmtN(l.qtd), emb(l)]);
@@ -1182,8 +1203,49 @@ function pdfPromotor(lojas) {
     doc.text('Recebido e conferido por: ______________________________________     Data: ____/____/______', 28, yy);
   }
   if (primeira) return toast('Não há itens com pedido para gerar o PDF.');
-  salvarPdf(doc, `Promotor_${lojas.length === 1 ? curta(lojas[0]) + (infoLoja(lojas[0]).nome ? '_' + norm(infoLoja(lojas[0]).nome) : '') : 'todas_as_lojas'}_${hoje()}.pdf`);
+  salvarPdf(doc, `Promotor_${lojas.length === 1 ? curta(lojas[0]) + (infoLoja(lojas[0]).nome ? '_' + norm(infoLoja(lojas[0]).nome) : '') : 'todas_as_lojas'}_${gruposSel.size === 1 ? norm([...gruposSel][0]) + '_' : gruposSel.size ? gruposSel.size + 'industrias_' : ''}${hoje()}.pdf`);
 }
+
+/* ---------- seleção de indústrias ---------- */
+let buscaGrupo = '';
+function renderMulti() {
+  const lojaOk = l => daLoja(l);
+  const m = new Map();
+  for (const l of linhas) { if (!lojaOk(l)) continue; const g = m.get(l.grupo) || { v: 0, n: 0 }; if (l.qtd > 0) { g.v += l.total; g.n++; } m.set(l.grupo, g); }
+  const grupos = [...m].sort((a, b) => (a[0] === SEM_GRUPO) - (b[0] === SEM_GRUPO) || b[1].v - a[1].v || a[0].localeCompare(b[0]));
+  const rot = !gruposSel.size ? 'Todas as indústrias' : gruposSel.size === 1 ? [...gruposSel][0] : `${gruposSel.size} indústrias`;
+  document.querySelectorAll('[data-multi]').forEach(box => {
+    const aberto = box.querySelector('details')?.open;
+    const q = norm(buscaGrupo);
+    box.innerHTML = `<details${aberto ? ' open' : ''}><summary><span>Indústria:</span> <strong>${esc(rot)}</strong>${gruposSel.size ? `<span class="cont">${gruposSel.size}</span>` : ''}</summary>
+      <div class="pop">
+        <input type="search" class="buscaGrupo" placeholder="Buscar indústria" value="${esc(buscaGrupo)}" aria-label="Buscar indústria"/>
+        <div class="acoes-multi"><button type="button" class="btn sec pequeno" data-grupos="com">Só com pedido</button><button type="button" class="btn sec pequeno" data-grupos="limpar">Todas</button></div>
+        <div class="lista">${grupos.filter(([g]) => !q || norm(g).includes(q)).map(([g, x]) => `<label class="op"><input type="checkbox" data-grupo="${esc(g)}"${gruposSel.has(g) ? ' checked' : ''}/><span class="n">${esc(g)}</span><span class="v">${x.n ? fmtMil(x.v) + ' · ' + x.n + ' it' : 'sem pedido'}</span></label>`).join('') || '<p class="fraco" style="margin:6px 0">Nenhuma indústria.</p>'}</div>
+      </div></details>`;
+  });
+}
+document.addEventListener('change', e => {
+  const c = e.target.closest('[data-grupo]'); if (!c) return;
+  c.checked ? gruposSel.add(c.dataset.grupo) : gruposSel.delete(c.dataset.grupo);
+  render();
+});
+document.addEventListener('input', e => {
+  if (!e.target.matches('.buscaGrupo')) return;
+  buscaGrupo = e.target.value; const pos = e.target.selectionStart;
+  renderMulti();
+  const el = e.target.closest('[data-multi]')?.querySelector('.buscaGrupo') || document.querySelector('details[open] .buscaGrupo');
+  if (el) { el.focus(); el.setSelectionRange(pos, pos); }
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-grupos]');
+  if (b) {
+    if (b.dataset.grupos === 'limpar') gruposSel.clear();
+    else { gruposSel = new Set(linhas.filter(l => daLoja(l) && l.qtd > 0).map(l => l.grupo)); }
+    return render();
+  }
+  if (!e.target.closest('[data-multi]')) document.querySelectorAll('[data-multi] details[open]').forEach(d => d.open = false);   // fecha ao clicar fora
+});
 
 /* ---------- eventos ---------- */
 let tt;
@@ -1218,7 +1280,7 @@ const drop = $('#drop');
 drop.addEventListener('drop', e => e.dataTransfer.files[0] && abrir(e.dataTransfer.files[0]));
 ['#pCobertura', '#pEntrega'].forEach(id => $(id).addEventListener('input', calcular));
 $('#pMultiplo').addEventListener('change', calcular);
-['#fSit', '#fGrupo'].forEach(id => $(id).addEventListener('change', render));
+$('#fSit').addEventListener('change', render);
 $('#fBusca').addEventListener('input', render);
 $('#lojas').addEventListener('click', e => { const b = e.target.closest('.loja'); if (!b) return; lojaSel = b.dataset.loja; render(); });
 $('#kpis').addEventListener('click', e => { if (!e.target.closest('#kpiNeg')) return; $('#fSit').value = 'negativo'; selAba('loja'); });
